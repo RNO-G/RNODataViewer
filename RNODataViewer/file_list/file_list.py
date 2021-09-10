@@ -45,6 +45,6 @@ def update_file_list(n_clicks, file_type, station_ids):
             station_ids = [station_ids]
         if stn in station_ids:
             children.append(
-                    html.Div('Station: {}\tRun: {}\t\t{}'.format(stn, run, filename))
+                    html.Div('{}'.format(filename))
             )
     return children

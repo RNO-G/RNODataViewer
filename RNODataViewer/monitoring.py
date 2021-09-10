@@ -12,14 +12,13 @@ app.config.suppress_callback_exceptions = True
 
 import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.data_provider_nur
-from file_list.run_stats import RunStats
 
 from tabs import rnog_overview
 from tabs import run_viewer
 from tabs import event_viewer
 
 import logging
-from file_list.run_stats import RUN_TABLE
+from file_list.run_stats import run_table
 import astropy.time
 import pandas as pd
 import sys, os
@@ -34,7 +33,6 @@ parsed_args = argparser.parse_args()
 logging.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
-run_table = RUN_TABLE
 filenames_root = run_table.filenames_root
 filenames_nur = []
   
