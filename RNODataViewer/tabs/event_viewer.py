@@ -20,25 +20,12 @@ from NuRadioReco.modules.base import module
 from file_list.run_stats import RUN_TABLE, DATA_DIR #, RunStats
 logger = module.setup_logger(level=logging.INFO)
 
-"""
-argparser = argparse.ArgumentParser(description="Starts the Event Display, which then can be accessed via a webbrowser")
-argparser.add_argument('file_location', type=str, help="Path of folder or filename.")
-argparser.add_argument('--open-window', const=True, default=False, action='store_const',
-                       help="Open the event display in a new browser tab on startup")
-argparser.add_argument('--port', default=8080, help="Specify the port the event display will run on")
-argparser.add_argument('--rnog_file', const=True, default=False, action='store_const')
+#data_folder = DATA_DIR
+#if os.path.isfile(data_folder):
+#    starting_filename = data_folder
+#else:
+#    starting_filename = None
 
-parsed_args = argparser.parse_args()
-"""
-
-
-data_folder = "."
-if os.path.isfile(data_folder):
-    starting_filename = data_folder
-else:
-    starting_filename = None
-#if parsed_args.open_window:
-#    webbrowser.open('http://127.0.0.1:{}/'.format(parsed_args.port))
 data_folder = DATA_DIR
 
 browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
@@ -65,7 +52,7 @@ event_viewer_layout = html.Div([
                 dcc.Dropdown(id='filename',
                              options=[],
                              multi=False,
-                             value=starting_filename,
+                             #value=starting_filename,
                              className='custom-dropdown',style={'width':'100%'}),
                 html.Div([
                     html.Button('open file', id='btn-open-file', className='btn btn-default')
@@ -251,8 +238,7 @@ def set_uuid(pathname, juser_id):
     return json.dumps(user_id)
 
 
-@app.callback(Output('filename', 'options'),
-              [Input('datafolder', 'value')])
+@app.callback(Output('filename', 'options'), [Input('datafolder', 'value')])
 def set_filename_dropdown(folder):
     #if parsed_args.rnog_file:
         #rs = RunStats(folder)
@@ -394,11 +380,3 @@ def update_event_info_time(event_i, filename, station_id, juser_id):
         return ''
     return '{:%d. %b %Y, %H:%M:%S}'.format(evt.get_station(station_id).get_station_time().datetime)
 
-
-if __name__ == '__main__':
-    if int(dash.__version__.split('.')[0]) <= 1:
-        if int(dash.__version__.split('.')[1]) < 0:
-            print(
-                'WARNING: Dash version 0.39.0 or newer is required, you are running version {}. Please update.'.format(
-                    dash.__version__))
-    app.run_server(debug=False, port=parsed_args.port)

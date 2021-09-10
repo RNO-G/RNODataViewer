@@ -31,4 +31,4 @@ except KeyError:
 
 rs = RunStats(DATA_DIR)
 RUN_TABLE = rs.get_table()
-
+run_table = RUN_TABLE

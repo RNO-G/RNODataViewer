@@ -12,6 +12,7 @@ import RNODataViewer.base.error_message
 from NuRadioReco.utilities import units
 from astropy.time import Time, TimeDelta
 from NuRadioReco.framework.base_trace import BaseTrace
+
 layout = html.Div([
     html.Div([
         html.Div([
@@ -36,21 +37,13 @@ layout = html.Div([
     [State('station-id-dropdown', 'value')]
 )
 def update_triggeruproot_plot(n_clicks, station_ids):
-    BINWIDTH_SEC = 10*60
+    BINWIDTH_SEC = 10*60 #define how fine we want the binning
     if station_ids is None:
         return RNODataViewer.base.error_message.get_error_message('No Station selected')
     data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
     
-    #station_ids_found = []
-    #for station_id in station_ids:
-    #    first_event = data_provider.get_first_event(station_id)
-    #    if first_event is not None:
-    #        station_ids_found.append(station_id)
-    #if len(station_ids_found)==0:
-    #    return RNODataViewer.base.error_message.get_error_message('Stations {} not found in events'.format(list(station_ids)))
     plots = []
     subplot_titles = []
-
 
     # get the needed data:
     station_numbers = np.array([],dtype=int)
@@ -64,6 +57,16 @@ def update_triggeruproot_plot(n_clicks, station_ids):
             'radiant_trigger': np.array([],dtype=bool),
             'lt_trigger': np.array([],dtype=bool)
             }
+    trigger_line_styles = {
+            'rf_trigger': 'dash',
+            'force_trigger': 'longdash',
+            'pps_trigger': 'dashdot',
+            'ext_trigger': 'longdashdot',
+            'radiant_trigger': '5px 10px 2px 2px',
+            'lt_trigger': 'dot',
+            'total': 'solid'
+            }
+
     data_provider.set_iterators()
     for headers in data_provider.uproot_iterator_header:
         station_numbers = np.append(station_numbers, np.array(headers['station_number']))
@@ -86,14 +89,20 @@ def update_triggeruproot_plot(n_clicks, station_ids):
             point_labels = None #contents
             if key=="total":
                 visible = True
+                line_dict = dict(width=4)
+                mode = 'lines+markers'
             else:
                 visible='legendonly'
+                line_dict = dict(dash=trigger_line_styles[key])
+                mode = 'lines'
+            
             plots.append(go.Scatter(
                 x = bincenters,
                 y = contents/(BINWIDTH_SEC),
-                mode='lines+markers',
-                name='Station: {}, Trigger: {}'.format(station_id, key),
+                mode=mode,
+                name='Station: {}, Trigger: {}'.format(station_id, key.replace("_trigger","")),
                 visible=visible,
+                line=line_dict,
                 text=point_labels
             ))
     fig = go.Figure(plots)
