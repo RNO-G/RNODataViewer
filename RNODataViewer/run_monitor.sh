@@ -1,9 +1,11 @@
 #export rnog_eventbrowser branch of NuRadioMC 
 export PYTHONPATH=/Users/shallmann/software/rnog_eventbrowser:$PYTHONPATH
 #export feature/monitoring branch of RNODataViewer
-export PYTHONPATH=/Users/shallmann/software/RNODataViewer_Christoph:$PYTHONPATH
+export PYTHONPATH=/Users/shallmann/software/RNODataViewer:$PYTHONPATH
 
-export RNO_DATA_DIR="/Users/shallmann/dcachemount" #"/Users/shallmann/Desktop/rnog_field_data"
+# the monitoring takes $RNO_DATA_DIR environmental variable as top-level dir
+# of the data. i.e. the directory $RNO_DATA_DIR is supposed to hold subdirs
+# station11{/run???/combined.root}, station21, station22, ...
+export RNO_DATA_DIR="/Users/shallmann/Desktop/rnog_field_data"
 
-#gunicorn monitoring:server -b 127.0.0.1:8080
-python monitoring.py --port 8049 --open-window
+python3 monitoring.py --port 8050 --open-window
