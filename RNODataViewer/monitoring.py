@@ -18,11 +18,11 @@ from tabs import run_viewer
 from tabs import event_viewer
 
 import logging
+#TODO: need for updating run_table with hidden div? eg. dcc.Interval or other solution?
 from file_list.run_stats import run_table
 import astropy.time
 import pandas as pd
 import sys, os
-  
 argparser = argparse.ArgumentParser(description="View RNO Data Set")
 argparser.add_argument('--open-window', const=True, default=False, action='store_const',
                          help="Open the event display in a new browser tab on startup")
@@ -90,4 +90,4 @@ if __name__ == '__main__':
 
     if parsed_args.open_window:
         webbrowser.open_new("http://localhost:{}".format(port))
-    app.run_server(debug=False, port=port)
+    app.run_server(debug=False, port=port, host='0.0.0.0')

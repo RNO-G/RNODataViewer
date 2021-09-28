@@ -7,10 +7,12 @@ class RunStats:
     summary_csv = "https://www.zeuthen.desy.de/~shallman/rnog_run_summary.csv"
     def __init__(self, top_level_dir):
         self.run_summary_from_csv(self.summary_csv, top_level_dir)
+        print("found files:", len(self.run_table))
         if os.path.ismount(top_level_dir):
             print("input directory is mounted. Skipping check if all files exist")
         else:
             self.filter_available_runs()
+        print("available files:", len(self.run_table))
     def run_summary_from_csv(self, csv, top_level_dir="."):
         self.run_table = pd.read_csv(csv)
         self.run_table["mjd_first_event"] = np.array(astropy.time.Time(np.array(self.run_table["time first event"]).astype("str"), format='iso').mjd)

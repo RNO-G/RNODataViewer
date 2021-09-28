@@ -38,6 +38,13 @@ def get_slider_marks(ymin=2021, ymax=None, months = np.arange(1,13)):
     return slider_mark_dict
 slider_marks = get_slider_marks()
 
+#TODO replace this by something better
+try:
+    print(len(run_table))
+    slider_start = min(run_table["mjd_first_event"])
+except:
+    slider_start = astropy.time.Time.now().mjd-365
+
 overview_layout = html.Div([
     # selection for combined (including waveforms, only subset is transferred) or header files, station ids
     # TODO make app respond to use header-only files
@@ -46,7 +53,7 @@ overview_layout = html.Div([
     html.Div([html.Div('Time selector', style={'flex': '1'}),
                   dcc.RangeSlider(
                       id='time-selector',
-                      min=min(run_table["mjd_first_event"]),
+                      min=slider_start,
                       max=astropy.time.Time.now().mjd+1,
                       marks = slider_marks,
                       # by default select the last day
