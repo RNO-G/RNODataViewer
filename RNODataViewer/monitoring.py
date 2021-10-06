@@ -27,7 +27,8 @@ argparser = argparse.ArgumentParser(description="View RNO Data Set")
 argparser.add_argument('--open-window', const=True, default=False, action='store_const',
                          help="Open the event display in a new browser tab on startup")
 argparser.add_argument('--port', default=8080, help="Specify the port the event display will run on")
-argparser.add_argument('--reverse-proxy-path', default=None, help="Specify the port the event display will run on")
+argparser.add_argument('--reverse-proxy-path', default=None, help="If running behind a reverse proxy (e.g. https://example.org/monitoring is proxied to 127.0.0.1:$PORT from $REAL_HTTP_SERVER, you need to specify the path here so that the internal links work. In this case you would use /monitoring (don't include trailing /) ")
+argparser.add_argument('--waitress', const=True,  default=False, action='store_const', help="Use waitress instead of development server")
 #argparser.add_argument('--rno_data_dir', type=str, default=None, help="if set, use the passed <file_location> as top level directory where data (i.e. the stationXX directories) sit, rather than using 'RNO_DATA_DIR' environmental variable")
 parsed_args = argparser.parse_args()
 file_prefix = '.' 
@@ -105,4 +106,9 @@ if __name__ == '__main__':
 
     if parsed_args.open_window:
         webbrowser.open_new("http://localhost:{}".format(port))
-    app.run_server(debug=True, port=port, host='0.0.0.0')
+
+    if parsed_args.waitress:
+        from waitress import serve 
+        serve(app.server, host='0.0.0.0', port=port)
+    else:
+        app.run_server(debug=True, port=port, host='0.0.0.0')
