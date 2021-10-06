@@ -27,9 +27,24 @@ argparser = argparse.ArgumentParser(description="View RNO Data Set")
 argparser.add_argument('--open-window', const=True, default=False, action='store_const',
                          help="Open the event display in a new browser tab on startup")
 argparser.add_argument('--port', default=8080, help="Specify the port the event display will run on")
+argparser.add_argument('--reverse-proxy-path', default=None, help="Specify the port the event display will run on")
 #argparser.add_argument('--rno_data_dir', type=str, default=None, help="if set, use the passed <file_location> as top level directory where data (i.e. the stationXX directories) sit, rather than using 'RNO_DATA_DIR' environmental variable")
 parsed_args = argparser.parse_args()
+file_prefix = '.' 
   
+if parsed_args.reverse_proxy_path is not None:
+    app.config.update({
+    # as the proxy server will remove the prefix
+    'routes_pathname_prefix': '/', 
+
+    # the front-end will prefix this string to the requests
+    # that are made to the proxy server
+    'requests_pathname_prefix': parsed_args.reverse_proxy_path + "/" 
+    })
+
+    file_prefix = parsed_args.reverse_proxy_path
+
+
 logging.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
@@ -43,7 +58,7 @@ RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_n
 app.layout = html.Div([
     # header line with logo and title
     html.Div([
-        html.Img(src='./assets/rnog_logo_monogram_BlackTransparant.png', style={"float": "left", "width": "100px"}),
+        html.Img(src=file_prefix+'/assets/rnog_logo_monogram_BlackTransparant.png', style={"float": "left", "width": "100px"}),
         html.H1('RNO-G Data Monitor')]),
     # three tabs, using this method, fresh pages get loaded after switching tabs
     dcc.Tabs(
