@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function  # , unicode_literals
-import dash_html_components as html
-from dash_html_components.Div import Div
+from dash import html
 import NuRadioReco.eventbrowser.apps.trace_plots.channel_time_trace
 import NuRadioReco.eventbrowser.apps.trace_plots.channel_spectrum
 import NuRadioReco.eventbrowser.apps.trace_plots.multi_channel_plot

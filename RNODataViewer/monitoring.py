@@ -4,8 +4,8 @@ import argparse
 
 import dash
 from dash.dependencies import Input, Output
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
+from dash import dcc
 import webbrowser
 from RNODataViewer.base.app import app
 app.config.suppress_callback_exceptions = True
@@ -90,4 +90,4 @@ if __name__ == '__main__':
 
     if parsed_args.open_window:
         webbrowser.open_new("http://localhost:{}".format(port))
-    app.run_server(debug=False, port=port, host='0.0.0.0')
+    app.run_server(debug=True, port=port, host='0.0.0.0')

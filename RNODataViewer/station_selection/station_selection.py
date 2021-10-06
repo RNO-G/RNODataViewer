@@ -1,7 +1,7 @@
 #from NuRadioReco.eventbrowser.app import app
 from RNODataViewer.base.app import app
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import html
+from dash import dcc
 from dash.dependencies import Input, Output
 from RNODataViewer.station_selection.station_list import station_entries, channel_entries
 
