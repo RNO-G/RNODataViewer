@@ -10,6 +10,7 @@ RUN pip install numpy scipy matplotlib tinydb>=4.1.1 tinydb-serialization aenum 
 RUN pip install cython
 RUN pip install uproot==4.1.1 awkward
 RUN pip install pandas
+RUN pip install waitress
 
 # Install NuRadioReco
 ADD RNODataViewer /usr/local/lib/python3.6/site-packages/RNODataViewer
@@ -27,4 +28,4 @@ USER   nuradio
 EXPOSE 8049
 WORKDIR /usr/local/lib/python3.6/site-packages/RNODataViewer/
 #CMD [ "python", "./monitoring.py","--port 8049", "--open-window"] #not sure this will pick up PYTHONPATH variable
-CMD python ./monitoring.py --port 8049 
+CMD python ./monitoring.py --port 8049 --waitress
