@@ -8,7 +8,7 @@ RUN apt-get upgrade -y
 # Install core dependencies
 RUN pip install numpy scipy matplotlib tinydb>=4.1.1 tinydb-serialization aenum astropy radiotools>=0.2.0 h5py pyyaml peakutils requests pymongo dash plotly sphinx
 RUN pip install cython
-RUN pip install uproot awkward
+RUN pip install uproot<=4.1.1 awkward
 RUN pip install pandas
 
 # Install NuRadioReco
@@ -27,4 +27,4 @@ USER   nuradio
 EXPOSE 8049
 WORKDIR /usr/local/lib/python3.6/site-packages/RNODataViewer/
 #CMD [ "python", "./monitoring.py","--port 8049", "--open-window"] #not sure this will pick up PYTHONPATH variable
-CMD python ./monitoring.py --port 8049
+CMD python ./monitoring.py --port 8049 
