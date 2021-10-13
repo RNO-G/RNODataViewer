@@ -4,6 +4,7 @@ import numpy as np
 import astropy.time
 from NuRadioReco.utilities import units
 import NuRadioReco.framework.base_trace
+import NuRadioReco.utilities.fft
 
 
 def get_spectrogram_data_py(station_id, channel_ids):
@@ -78,6 +79,37 @@ def get_spectrogram_data_root(station_id, channel_ids, filenames=None):
 
     event_ids = data_provider.get_event_ids(station_id)
     run_numbers = data_provider.get_run_numbers(station_id)
-    labels = event_ids
+    labels = ['Run {}, Event {}'.format(run_numbers[i], event_ids[i]) for i in range(len(event_ids))]
     #return True, times, spectra, d_f
     return True, np.arange(0, len(times)), spectra, d_f, labels
+
+def get_spectrogram_average_root(station_id, channel_ids, filenames=None, suppress_zero_mode=False):
+    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot(channels=channel_ids)
+    if not filenames is None:
+        data_provider.set_filenames(filenames)
+    data_provider.set_iterators()
+    n_total, n_forced = 0, 0
+    tr = NuRadioReco.framework.base_trace.BaseTrace()
+    sampling_rate = 3.2 * units.GHz
+    tr.set_trace(np.zeros(2048), sampling_rate=sampling_rate)
+    frequencies = tr.get_frequencies()
+    spectra_all = np.zeros((len(channel_ids),len(frequencies)))
+    spectra_force = np.zeros((len(channel_ids),len(frequencies)))
+    for headers, events in zip(data_provider.uproot_iterator_header, data_provider.uproot_iterator_data):
+        mask_station = headers['station_number'] == station_id
+        try:
+            mask_force_trigger = headers['trigger_info.force_trigger'][mask_station]
+        except ValueError:
+            mask_force_trigger = np.zeros(len(mask_station), dtype=bool)
+
+        traces = np.array(events['radiant_data[24][2048]'][:, channel_ids, :])[mask_station]
+        spectra = np.abs(NuRadioReco.utilities.fft.time2freq(traces, sampling_rate))
+        spectra_all += np.sum(spectra, axis=0)
+        spectra_force += np.sum(spectra[mask_force_trigger], axis=0)
+        n_total += len(spectra)
+        n_forced += np.sum(mask_force_trigger)
+    print('n_events {} forced trigger {}'.format(n_total, n_forced))
+    if suppress_zero_mode:
+        spectra_all[:,0] = 0
+        spectra_force[:,0] = 0
+    return frequencies, spectra_all / np.max([n_total,1]), spectra_force / np.max([n_forced,1])

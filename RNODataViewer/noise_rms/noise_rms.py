@@ -4,6 +4,7 @@ from RNODataViewer.base.app import app
 from dash import html
 from dash import dcc
 from dash.dependencies import Input, Output, State
+from dash import callback_context
 import plotly.graph_objs as go
 import RNODataViewer.base.data_provider_nur
 import RNODataViewer.base.error_message
@@ -18,6 +19,9 @@ layout = html.Div([
             html.Div([
                 html.Div('Noise RMS', style={'flex': '1'}),
                 html.Div([
+                    html.Button('Show', id='noise-rms-showhide')
+                ],  style={'flex':'none', 'margin-right':'5px'}),
+                html.Div([
                     html.Button([
                         html.Div('', className='icon-cw')
                     ], id='noise-rms-reload-button', className='btn btn-primary')
@@ -26,7 +30,7 @@ layout = html.Div([
         ], className='panel panel-heading'),
         html.Div([
             dcc.Graph(id='noise-rms-plot')
-        ], className='panel panel-body')
+        ], id='noise-rms-plot-container', className='panel panel-body', style={'display':'none'})
     ], className='panel panel-default')
 ])
 
@@ -86,3 +90,27 @@ def update_noise_rms_plot(n_clicks, station_id, channel_ids, file_names):
     )
     fig.update_xaxes(nticks=10)
     return fig
+
+@app.callback(
+    [Output('noise-rms-plot-container', 'style'),
+     Output('noise-rms-showhide','children')],
+    [Input('noise-rms-reload-button', 'n_clicks'),
+     Input('noise-rms-showhide', 'n_clicks')],
+    [State('noise-rms-showhide', 'children'),
+     State('noise-rms-plot-container', 'style')],
+     prevent_initial_call=True
+)
+def show_hide_rms_plot(n_clicks1, n_clicks2, show_or_hide, style):
+    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]
+    if trigger == 'noise-rms-reload-button':
+        style['display'] = 'inherit'
+        return style, 'Hide'
+    elif trigger == 'noise-rms-showhide':
+        if show_or_hide == 'Hide':
+            style['display'] = 'none'
+            return style, 'Show'
+        else:
+            style['display'] = 'inherit'
+            return style, 'Hide'
+    else:
+        return style, 'Hide'

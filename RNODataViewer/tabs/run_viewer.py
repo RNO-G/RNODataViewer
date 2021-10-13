@@ -10,6 +10,7 @@ import RNODataViewer.base.data_provider_nur
 import RNODataViewer.file_list.file_list
 import RNODataViewer.station_selection.station_selection
 import RNODataViewer.spectrogram.spectrogram
+import RNODataViewer.spectrogram.spectrogram_average_plot
 import RNODataViewer.noise_rms.noise_rms
 from file_list.run_stats import run_table
 import numpy as np
@@ -40,6 +41,11 @@ run_viewer_layout = html.Div([
     html.Div([
         html.Div([
             RNODataViewer.spectrogram.spectrogram.layout
+        ], className='flexi-element-1')
+    ], className='flexi-box'),
+    html.Div([
+        html.Div([
+            RNODataViewer.spectrogram.spectrogram_average_plot.layout
         ], className='flexi-element-1')
     ], className='flexi-box')
 ])

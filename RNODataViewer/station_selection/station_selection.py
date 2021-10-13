@@ -2,7 +2,8 @@
 from RNODataViewer.base.app import app
 from dash import html
 from dash import dcc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
+from dash import callback_context
 from RNODataViewer.station_selection.station_list import station_entries, channel_entries
 
 layout = html.Div([
@@ -53,19 +54,50 @@ layout_run_browser = html.Div([
               dcc.Dropdown(
                   id='station-id-dropdown-single',
                   options=station_entries,
-                  multi=False
+                  multi=False,
+                  style={'display':'inline-block','width':'100%'}
               )
           ], className='option-select')
           ], className='option-set', style={"flex":"1", 'display': 'inline-block', 'width':'16%'}),
       html.Div([
           html.Div('Channel IDs', className='option-label'),
           html.Div([
+              html.Div([
               dcc.Dropdown(
                   id='channel-id-dropdown',
                   options=channel_entries,
                   value=[0],
-                  multi=True
-              )
+                  multi=True,
+                  style={'width':'100%'}
+              ),],style={'display':'inline-block', 'width':'95%'}),
+            #   html.Div([
+              dcc.Checklist(
+                  id='channel-id-select-all', options=[{'label':'All', 'value':'select_all'}], 
+                  style={'display':'inline-block', 'margin-bottom':0, 'width':'4%','margin-left':'5px'}
+                  )
+            #   ], style={'display':'inline-block', 'width':'5%'})
           ], className='option-select')
           ], className='option-set', style={'display': 'inline-block', 'width':'82%'})
       ], className='input-group', style={'flex': '1','display': 'inline-block', 'width':'100%'})
+
+@app.callback(
+    [Output('channel-id-dropdown', 'value'),
+     Output('channel-id-select-all', 'value')],
+    [Input('channel-id-dropdown', 'value'),
+     Input('channel-id-select-all', 'value')],
+    [State('channel-id-dropdown', 'options')],
+    prevent_initial_call=True
+)
+def select_all_channels(channel_ids, select_all, channel_options):
+    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]
+    all_channels = sorted([k['value'] for k in channel_options])
+    if trigger == 'channel-id-dropdown':
+        if sorted(channel_ids) == all_channels:
+            return channel_ids, ['select_all']
+        else:
+            return channel_ids, []
+    elif trigger == 'channel-id-select-all':
+        if 'select_all' in select_all:
+            return all_channels, ['select_all']
+        else:
+            return [], []

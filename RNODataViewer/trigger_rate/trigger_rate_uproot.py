@@ -34,7 +34,8 @@ layout = html.Div([
 @app.callback(
     Output('triggeruproot-plot', 'figure'),
     [Input('triggeruproot-reload-button', 'n_clicks')],
-    [State('station-id-dropdown', 'value')]
+    [State('station-id-dropdown', 'value')],
+    prevent_initial_call=True
 )
 def update_triggeruproot_plot(n_clicks, station_ids):
     BINWIDTH_SEC = 10*60 #define how fine we want the binning
