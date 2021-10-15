@@ -1,3 +1,4 @@
+from dash.exceptions import PreventUpdate
 import numpy as np
 #from NuRadioReco.eventbrowser.app import app
 from RNODataViewer.base.app import app
@@ -30,6 +31,9 @@ layout = html.Div([
             ], className='flexi-box')
         ], className='panel panel-heading'),
         html.Div([
+            dcc.Markdown('Max frequency amplitude:', style={'margin-right':'5px', 'display':'inline-block'}),
+            dcc.Input(id='spectrogram-plot-max-freq-amp', inputMode='numeric',min=1,max=1e5,debounce=True,value=1e3, style={'display':'inline-block'}),
+            dcc.Markdown(' mV', style={'margin-left':'5px', 'display':'inline-block'}),
             dcc.Graph(id='spectrogram-plot')
         ], className='panel panel-body', id='spectrogram-plot-container', style={'display':'none'})
     ], className='panel panel-default')
@@ -42,18 +46,35 @@ channel_mapping.set_index("value", inplace=True)
 
 @app.callback(
     Output('spectrogram-plot', 'figure'),
-    [Input('spectrogram-reload-button', 'n_clicks')],
+    [Input('spectrogram-reload-button', 'n_clicks'),
+     Input('spectrogram-plot-max-freq-amp', 'value')],
     [State('station-id-dropdown-single', 'value'),
      State('channel-id-dropdown', 'value'),
-     State('file-name-dropdown-2', 'value')]
+     State('file-name-dropdown-2', 'value'),
+     State('spectrogram-plot', 'figure')]
 )
-def update_spectrogram_plot(n_clicks, station_id, channel_ids, file_names):
+def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, file_names, current_fig):
     if len(file_names) == 0:
         return RNODataViewer.base.error_message.get_error_message('No File chosen')
     if station_id is None:
         return RNODataViewer.base.error_message.get_error_message('No Station selected')
     if len(channel_ids) == 0:
         return RNODataViewer.base.error_message.get_error_message('No Channels selected')
+    max_freq_amp = float(max_freq_amp)
+    # adjust the plotting scale only:
+    if callback_context.triggered[0]['prop_id'].split('.')[0] == 'spectrogram-plot-max-freq-amp':
+        # try:
+            
+        # except ValueError:
+        #     raise PreventUpdate
+        # if (max_freq_amp < 1) or (max_freq_amp > 1e6):
+        #     raise PreventUpdate
+        try:
+            current_fig['layout']['coloraxis']['cmax']=max_freq_amp
+            return current_fig
+        except AttributeError as e:
+            print(e)
+            raise PreventUpdate
     station_found, times, spectra, d_f, labels = RNODataViewer.spectrogram.spectrogram_data.get_spectrogram_data_root(station_id, channel_ids, file_names)
     if not station_found:
         return RNODataViewer.base.error_message.get_error_message('Station {} not found in events'.format(station_id))
@@ -91,9 +112,10 @@ def update_spectrogram_plot(n_clicks, station_id, channel_ids, file_names):
             ), i_row, i_col
         )
         fig['layout']['xaxis{}'.format(i_channel+1)].update(showticklabels=True)
-    fig.update_layout(coloraxis_colorbar={'title': 'U [mV]'}, height=300 * n_rows)
+    fig.update_layout(coloraxis_colorbar={'title': 'U [mV]'}, height=300 * n_rows + 100)
     fig.update_layout({"coloraxis_cmin": 0,
-                       "coloraxis_cmax": 1e3})
+                       "coloraxis_cmax": max_freq_amp})
+    fig['layout']['uirevision'] = file_names
     return fig
 
 @app.callback(

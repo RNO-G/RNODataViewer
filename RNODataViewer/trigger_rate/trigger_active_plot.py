@@ -63,10 +63,13 @@ def plot_active_triggers(n_clicks, time_value, station_ids):
             table_i["mjd_last_event"], table_i["mjd_last_event"]
         ])), format='mjd').fits
         trigger_active = np.zeros((len(x_times), len(trigger_cols)))
-        data_labels = np.concatenate([
-            ['Run {} (start)'.format(run)]*2 + ['Run {} (end)'.format(run)]*2 
-            for run in table_i.run
-        ])
+        if len(table_i):
+            data_labels = np.concatenate([
+                ['Run {} (start)'.format(run)]*2 + ['Run {} (end)'.format(run)]*2 
+                for run in table_i.run
+            ])
+        else:
+            data_labels = []
         for i_trigger, trigger in enumerate(trigger_cols):
             mask = 4 * np.where(table_i[trigger])[0]
             trigger_active[mask + 1, i_trigger] = 1
