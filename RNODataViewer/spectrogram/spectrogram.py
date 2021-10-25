@@ -11,6 +11,7 @@ import plotly.subplots
 import RNODataViewer.base.data_provider_nur
 import RNODataViewer.base.error_message
 import RNODataViewer.spectrogram.spectrogram_data
+import astropy.time
 from NuRadioReco.utilities import units
 from station_selection.station_list import channel_entries
 import pandas as pd
@@ -63,17 +64,10 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
     max_freq_amp = float(max_freq_amp)
     # adjust the plotting scale only:
     if callback_context.triggered[0]['prop_id'].split('.')[0] == 'spectrogram-plot-max-freq-amp':
-        # try:
-            
-        # except ValueError:
-        #     raise PreventUpdate
-        # if (max_freq_amp < 1) or (max_freq_amp > 1e6):
-        #     raise PreventUpdate
         try:
             current_fig['layout']['coloraxis']['cmax']=max_freq_amp
             return current_fig
         except AttributeError as e:
-            print(e)
             raise PreventUpdate
     station_found, times, spectra, d_f, labels = RNODataViewer.spectrogram.spectrogram_data.get_spectrogram_data_root(station_id, channel_ids, file_names)
     if not station_found:
@@ -93,7 +87,8 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
         shared_yaxes='all',
         vertical_spacing=0.2 / n_rows
     )
-
+    times_iso = np.repeat(astropy.time.Time(times).iso, len(spectra[0][0])).reshape(len(labels),len(spectra[0][0])).T
+    plot_times = np.arange(0, len(times))
     xtitles = np.repeat(labels, len(spectra[0][0])).reshape(len(labels),len(spectra[0][0])).T
     for i_channel, channel_id in enumerate(channel_ids):
         i_row = i_channel // 4 + 1
@@ -101,13 +96,13 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
         fig.add_trace(
             go.Heatmap(
                 z=np.abs(spectra[i_channel].T) / units.mV,
-                x=times,
+                x=plot_times,
                 y0=0.0,
                 dy=d_f / units.MHz,
                 customdata=xtitles,
                 coloraxis='coloraxis',
-                meta=xtitles,
-                hovertemplate='%{customdata}<br>%{y}<br>amplitude [mV/Hz]: %{z}<extra></extra>'
+                meta=times_iso,
+                hovertemplate='%{customdata}<br>%{y}<br>amplitude [mV/Hz]: %{z}<extra></extra><br>%{meta}'
                 #name='Ch.{}'.format(channel_id)
             ), i_row, i_col
         )

@@ -81,7 +81,7 @@ def get_spectrogram_data_root(station_id, channel_ids, filenames=None):
     run_numbers = data_provider.get_run_numbers(station_id)
     labels = ['Run {}, Event {}'.format(run_numbers[i], event_ids[i]) for i in range(len(event_ids))]
     #return True, times, spectra, d_f
-    return True, np.arange(0, len(times)), spectra, d_f, labels
+    return True, times, spectra, d_f, labels
 
 def get_spectrogram_average_root(station_id, channel_ids, filenames=None, suppress_zero_mode=False):
     data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot(channels=channel_ids)
