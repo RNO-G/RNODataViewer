@@ -16,6 +16,7 @@ import RNODataViewer.file_list.file_list
 import RNODataViewer.station_selection.station_selection
 import RNODataViewer.trigger_rate.trigger_rate_uproot
 import RNODataViewer.trigger_rate.trigger_active_plot
+import RNODataViewer.trigger_rate.run_data_plot
 from file_list.run_stats import run_table
 
 def get_slider_marks(ymin=2021, ymax=None, months = np.arange(1,13)):
@@ -112,6 +113,11 @@ overview_layout = html.Div([
     html.Div([
         html.Div([
             RNODataViewer.trigger_rate.trigger_rate_uproot.layout
+        ], className='flexi-element-1')
+    ], className='flexi-box'),
+    html.Div([
+        html.Div([
+            RNODataViewer.trigger_rate.run_data_plot.layout
         ], className='flexi-element-1')
     ], className='flexi-box'),
     html.Div([

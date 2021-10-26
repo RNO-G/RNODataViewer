@@ -5,6 +5,7 @@ from RNODataViewer.base.app import app
 from dash import html
 from dash import dcc
 from dash.dependencies import Input, Output, State
+from dash import callback_context
 import plotly.graph_objs as go
 import plotly.subplots
 import RNODataViewer.base.data_provider_root
@@ -19,6 +20,9 @@ layout = html.Div([
             html.Div([
                 html.Div('Event rate', style={'flex': '1'}),
                 html.Div([
+                    html.Button('Show', id='triggeruproot-showhide')
+                ],  style={'flex':'none', 'margin-right':'5px'}),
+                html.Div([
                     html.Button([
                         html.Div('', className='icon-cw')
                     ], id='triggeruproot-reload-button', className='btn btn-primary')
@@ -27,7 +31,7 @@ layout = html.Div([
         ], className='panel panel-heading'),
         html.Div([
             dcc.Graph(id='triggeruproot-plot')
-        ], className='panel panel-body')
+        ], className='panel panel-body',id='triggeruproot-plot-container', style={'display':'none'})
     ], className='panel panel-default')
 ])
 
@@ -113,3 +117,27 @@ def update_triggeruproot_plot(n_clicks, station_ids):
       )
     fig.update_yaxes(rangemode='tozero')
     return fig
+
+@app.callback(
+    [Output('triggeruproot-plot-container', 'style'),
+     Output('triggeruproot-showhide','children')],
+    [Input('triggeruproot-reload-button', 'n_clicks'),
+     Input('triggeruproot-showhide', 'n_clicks')],
+    [State('triggeruproot-showhide', 'children'),
+     State('triggeruproot-plot-container', 'style')],
+     prevent_initial_call=True
+)
+def show_hide_plot(n_clicks1, n_clicks2, show_or_hide, style):
+    trigger = callback_context.triggered[0]['prop_id'].split('.')[0]
+    if trigger == 'triggeruproot-reload-button':
+        style['display'] = 'inherit'
+        return style, 'Hide'
+    elif trigger == 'triggeruproot-showhide':
+        if show_or_hide == 'Hide':
+            style['display'] = 'none'
+            return style, 'Show'
+        else:
+            style['display'] = 'inherit'
+            return style, 'Hide'
+    else:
+        return style, 'Hide'
