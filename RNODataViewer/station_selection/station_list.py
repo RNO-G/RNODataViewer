@@ -34,7 +34,7 @@ channel_entries = [
     {'label': 'Ch. 18 (Surf. Arm C)', 'value': 18},
     {'label': 'Ch. 19 (Surf. Arm C)', 'value': 19},
     {'label': 'Ch. 20 (Surf. Arm C)', 'value': 20},
-    {'label': 'Ch. 21 (HS A Vpol)', 'value': 21},
+    {'label': 'Ch. 21 (HS A Hpol)', 'value': 21},
     {'label': 'Ch. 22 (HS A Vpol)', 'value': 22},
-    {'label': 'Ch. 23 (HS A Hpol)', 'value': 23},
+    {'label': 'Ch. 23 (HS A Vpol)', 'value': 23},
 ]
