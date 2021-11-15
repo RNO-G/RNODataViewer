@@ -4,6 +4,7 @@ from dash import dcc
 from dash import html
 import dash
 import json
+from dash.exceptions import PreventUpdate
 import numpy as np
 import uuid
 import glob
@@ -31,6 +32,12 @@ data_folder = DATA_DIR
 browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
 browser_provider.set_filetype(True)
 
+def set_filename_dropdown(folder):
+        run_table = RUN_TABLE 
+        filtered_names = list(run_table.filenames_root)
+        rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in run_table.iterrows()]
+        return rrr
+
 
 event_viewer_layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -42,17 +49,12 @@ event_viewer_layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Div([
-                    html.Div('File location:', className='input-group-text')
-                    ], className='input-group-addon', style={'width':'200px'}),
-                dcc.Input(id='datafolder', placeholder='filename', type='text', value=data_folder,
-                          className='form-control')
-            ], className='input-group', style={"width":"99%"}),
-            html.Div([
                 dcc.Dropdown(id='filename',
-                             options=[],
+                             options=set_filename_dropdown(data_folder),
                              multi=False,
                              #value=starting_filename,
+                            #  persistence=True,
+                            #  persistence_type='memory',
                              className='custom-dropdown',style={'width':'100%'}),
                 html.Div([
                     html.Button('open file', id='btn-open-file', className='btn btn-default')
@@ -85,7 +87,7 @@ event_viewer_layout = html.Div([
                             )
                         ],
                         className='btn-group',
-                        style={'margin': '10px'}
+                        style={'margin': '5px'}
                     ),
                     html.Div(
                         [
@@ -102,31 +104,49 @@ event_viewer_layout = html.Div([
                             'flex': '1'
                         }
                     ),
-                    html.Div([
-                        dcc.Dropdown(
-                            id='station-id-dropdown',
-                            options=[],
-                            multi=False
-                        )
-                    ],
-                        style={'flex': 'none', 'padding': '10px', 'min-width': '200px'})
                 ],
                 style={
                     'display': 'flex'
                 }
+            ),
+            html.Div([
+                html.Div([
+                    dcc.Markdown('**Trigger name:**', className='custom-table-td'),
+                    html.Div('')], className='custom-table-row', id='trigger-names-row'
+                ),
+                html.Div([
+                    dcc.Markdown('**Triggered:**', className='custom-table-td'),
+                    html.Div('')], className='custom-table-row', id='trigger-bool-row'
+                )], style={
+                    'flex':1, 'border':'1px solid transparent', 'border-radius':'4px', 
+                    'border-color':"#ddd", 'margin-right':'5px', 'margin-bottom':'5px'}
             )
         ], style={'flex': '7'}),
         html.Div([
+            html.Div(
+                html.Div([
+                    dcc.Dropdown(
+                        id='station-id-dropdown',
+                        options=[],
+                        multi=False,
+                        # persistence=True,
+                        # persistence_type='memory'
+                    )
+                ],
+                    style={'flex': 1})
+            , className='custom-table-row'),
             html.Div([
                 html.Div('Run:', className='custom-table-td'),
                 dcc.Dropdown(
                     value='', options=[], searchable=True, clearable=False,
+                    # persistence=True, persistence_type='memory',
                     id='event-info-run', style={'flex':1})
             ], className='custom-table-row'),
             html.Div([
                 html.Div('Event:', className='custom-table-td'),
                 dcc.Dropdown(
                     value='', options=[], searchable=True, clearable=False,
+                    # persistence=True, persistence_type='memory',
                     id='event-info-id', style={'flex':1})
             ], className='custom-table-row'),
             html.Div([
@@ -135,7 +155,7 @@ event_viewer_layout = html.Div([
             ], className='custom-table-row')
         ], style={'flex': '1'}, className='event-info-table')
     ], style={'display': 'flex'}),
-    traces.layout #'', id='content')
+    traces.layout 
 ])
 
 
@@ -169,8 +189,8 @@ def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, event_i
     if filename is None:
         return 0, None, None
     user_id = json.loads(juser_id)
-    number_of_events = browser_provider.get_arianna_io(user_id, filename).get_n_events()
-    event_ids = browser_provider.get_arianna_io(user_id, filename).get_event_ids()
+    number_of_events = browser_provider.get_file_handler(user_id, filename).get_n_events()
+    event_ids = browser_provider.get_file_handler(user_id, filename).get_event_ids()
     if context.triggered[0]['prop_id'] == 'filename.value':
         return 0, event_ids[0][0], event_ids[0][1]
     if context.triggered[0]['prop_id'] == 'event-click-coordinator.children':
@@ -193,9 +213,6 @@ def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, event_i
             else:
                 event_i = i_event - 1
         if context.triggered[0]['prop_id'] == 'btn-next-event.n_clicks_timestamp':
-            # user_id = json.loads(juser_id)
-
-            # number_of_events = provider.get_arianna_io(user_id, filename).get_n_events()
             if number_of_events == i_event + 1:
                 event_i =  number_of_events - 1
             else:
@@ -222,8 +239,8 @@ def update_slider_options(filename, juser_id):
     if filename is None:
         return 0
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    number_of_events = ariio.get_n_events()
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    number_of_events = nurio.get_n_events()
     return number_of_events - 1
 
 
@@ -236,8 +253,8 @@ def update_slider_marks(filename, juser_id):
     if filename is None:
         return {}
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    n_events = ariio.get_n_events()
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    n_events = nurio.get_n_events()
     step_size = int(np.power(10., int(np.log10(n_events))))
     marks = {}
     for i in range(0, n_events, step_size):
@@ -257,19 +274,6 @@ def set_uuid(pathname, juser_id):
     return json.dumps(user_id)
 
 
-@app.callback(Output('filename', 'options'), [Input('datafolder', 'value')])
-def set_filename_dropdown(folder):
-    #if parsed_args.rnog_file:
-        #rs = RunStats(folder)
-        run_table = RUN_TABLE #rs.get_table()
-        filtered_names = list(run_table.filenames_root)
-        rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in run_table.iterrows()]
-        return rrr
-    #return [{'label': ll.split('/')[-1], 'value': ll} for ll in sorted(glob.glob(os.path.join(folder, '*.root*')))]
-    #else:
-    #    return [{'label': ll.split('/')[-1], 'value': ll} for ll in sorted(glob.glob(os.path.join(folder, '*.nur*')))]
-
-
 @app.callback(
     Output('station-id-dropdown', 'options'),
     [Input('filename', 'value'),
@@ -279,8 +283,8 @@ def get_station_dropdown_options(filename, i_event, juser_id):
     if filename is None:
         return []
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    event = ariio.get_event_i(i_event)
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    event = nurio.get_event_i(i_event)
     dropdown_options = []
     for station in event.get_stations():
         dropdown_options.append({
@@ -288,6 +292,31 @@ def get_station_dropdown_options(filename, i_event, juser_id):
             'value': station.get_id()
         })
     return dropdown_options
+
+
+@app.callback(
+    [Output('trigger-names-row', 'children'),
+     Output('trigger-bool-row', 'children')],
+    [Input('filename', 'value'),
+     Input('station-id-dropdown', 'value'),
+     Input('event-counter-slider', 'value')],
+    [State('user_id', 'children')]
+)
+def fill_trigger_info_table(filename, station_id, event_i, juser_id):
+    if filename is None:
+        raise PreventUpdate
+    user_id = json.loads(juser_id)
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    event = nurio.get_event_i(event_i)
+    station = event.get_station(station_id)
+    trigger_names = [dcc.Markdown('**Trigger name:**', className='custom-table-td'),]
+    trigger_bools = [dcc.Markdown('**Triggered:**', className='custom-table-td'),]
+    for trigger_key in station.get_triggers():
+        trigger = station.get_trigger(trigger_key)
+        print(trigger.get_name(), trigger.has_triggered())
+        trigger_names.append(html.Div(trigger.get_name(), className='custom-table-td'))
+        trigger_bools.append(html.Div(str(trigger.has_triggered()), className='custom-table-td'))
+    return trigger_names, trigger_bools
 
 
 @app.callback(
@@ -299,8 +328,8 @@ def set_to_first_station_in_event(filename, event_i, juser_id):
     if filename is None:
         return None
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    event = ariio.get_event_i(event_i)
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    event = nurio.get_event_i(event_i)
     for station in event.get_stations():
         return station.get_id()
 
@@ -362,8 +391,8 @@ def update_event_info_run_options(filename, juser_id):
     if filename == None:
         return []
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    run_numbers = np.unique([i[0] for i in ariio.get_event_ids()])
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    run_numbers = np.unique([i[0] for i in nurio.get_event_ids()])
     return [{'label':i, 'value':i} for i in run_numbers]
 
 @app.callback(
@@ -376,8 +405,8 @@ def update_event_info_id_options(run_number, filename, juser_id):
     if filename == None:
         return []
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    event_ids = [i[1] for i in ariio.get_event_ids() if i[0] == run_number]
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    event_ids = [i[1] for i in nurio.get_event_ids() if i[0] == run_number]
     return [{'label':i, 'value':i} for i in event_ids]
 
 
@@ -392,8 +421,8 @@ def update_event_info_time(event_i, filename, station_id, juser_id):
     if filename is None or station_id is None:
         return ""
     user_id = json.loads(juser_id)
-    ariio = browser_provider.get_arianna_io(user_id, filename)
-    evt = ariio.get_event_i(event_i)
+    nurio = browser_provider.get_file_handler(user_id, filename)
+    evt = nurio.get_event_i(event_i)
     if evt.get_station(station_id).get_station_time() is None:
         return ''
     return '{:%d. %b %Y, %H:%M:%S}'.format(evt.get_station(station_id).get_station_time().datetime)
