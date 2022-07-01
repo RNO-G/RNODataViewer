@@ -7,20 +7,20 @@ from dash import callback_context
 from RNODataViewer.station_selection.station_list import station_entries, channel_entries
 
 layout = html.Div([
-    html.Div([
-            html.Div('File Type', className='option-label'),
-            html.Div([
-                dcc.Dropdown(
-                    id='file-type-dropdown',
-                    options=[
-                        {'label': 'waveforms', 'value': 'combined'},
-                        {'label': 'headers', 'value': 'headers'}
-                    ],
-                    value='combined'
-                )
-            ], className='option-select')
-        ], className='option-set'),
-    html.Div([
+    # html.Div([
+    #         html.Div('File Type', className='option-label'),
+    #         html.Div([
+    #             dcc.Dropdown(
+    #                 id='file-type-dropdown',
+    #                 options=[
+    #                     {'label': 'waveforms', 'value': 'combined'},
+    #                     {'label': 'headers', 'value': 'headers'}
+    #                 ],
+    #                 value='combined'
+    #             )
+    #         ], className='option-select')
+    #     ], className='option-set'),
+    # html.Div([
         html.Div('Station ID', className='option-label'),
         html.Div([
             dcc.Dropdown(
@@ -31,7 +31,7 @@ layout = html.Div([
             )
         ], className='option-select')
     ], className='option-set')#,
-], className='input-group')
+# ], className='input-group')
 
 layout_run_browser = html.Div([
       #html.Div([
@@ -72,7 +72,7 @@ layout_run_browser = html.Div([
               ),],style={'display':'inline-block', 'width':'95%'}),
             #   html.Div([
               dcc.Checklist(
-                  id='channel-id-select-all', options=[{'label':'All', 'value':'select_all'}], 
+                  id='channel-id-select-all', options=[{'label':'All', 'value':'select_all'}],
                   style={'display':'inline-block', 'margin-bottom':0, 'width':'4%','margin-left':'5px'}
                   )
             #   ], style={'display':'inline-block', 'width':'5%'})

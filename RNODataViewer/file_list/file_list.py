@@ -26,15 +26,11 @@ layout = html.Div([
 @app.callback(
     Output('file-list-display', 'children'),
     [Input('file-list-reload-button', 'n_clicks')],
-    [State('file-type-dropdown', 'value'),
-     State('station-id-dropdown', 'value')]
+    [State('station-id-dropdown', 'value')]
 )
-def update_file_list(n_clicks, file_type, station_ids):
+def update_file_list(n_clicks, station_ids):
     data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
-    if file_type == 'combined':
-        filenames = data_provider.get_file_names()
-    elif file_type == 'headers':
-        filenames = [fn.replace("combined.root", "headers.root") for fn in data_provider.get_file_names()]
+    filenames = data_provider.get_file_names()
     if filenames is None:
         return ''
     children = []

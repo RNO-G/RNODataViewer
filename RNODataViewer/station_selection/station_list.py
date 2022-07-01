@@ -1,11 +1,11 @@
 station_entries = [
     {'label': 'Station 11', 'value': 11},
-    #{'label': 'Station 12', 'value': 12},
+    {'label': 'Station 12', 'value': 12},
     #{'label': 'Station 13', 'value': 13},
     #{'label': 'Station 14', 'value': 14},
     {'label': 'Station 21', 'value': 21},
     {'label': 'Station 22', 'value': 22},
-    #{'label': 'Station 23', 'value': 23},
+    {'label': 'Station 23', 'value': 23},
     #{'label': 'Station 24', 'value': 24},
     #{'label': 'Station 25', 'value': 25},
     #{'label': 'Station not set', 'value': 0},
