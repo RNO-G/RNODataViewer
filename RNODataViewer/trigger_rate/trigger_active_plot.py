@@ -37,13 +37,17 @@ layout = html.Div([
 @app.callback(
     Output('active-triggers-plot', 'figure'),
     Input('active-triggers-reload-button', 'n_clicks'),
-    [State('time-selector', 'value'),
+    [State('time-selector-start-date', 'date'),
+     State('time-selector-start-time', 'value'),
+     State('time-selector-end-date', 'date'),
+     State('time-selector-end-time', 'value'),
      State('station-id-dropdown', 'value')]
 )
-def plot_active_triggers(n_clicks, time_value, station_ids):
-    t_start, t_end = time_value
+def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, station_ids):
+    t_start = Time(start_date).mjd // 1 + start_time
+    t_end = Time(end_date).mjd // 1 + end_time
     trigger_cols = [
-        'has_rf0 (surface)', 'has_rf1 (deep)', 'has_ext (low threshold)', 
+        'has_rf0 (surface)', 'has_rf1 (deep)', 'has_ext (low threshold)',
         'has_pps (PPS signal)', 'has_soft (forced)'
     ]
     trigger_names = [
@@ -63,13 +67,13 @@ def plot_active_triggers(n_clicks, time_value, station_ids):
     for i_station, station_id in enumerate(station_ids):
         table_i = selected.query('station==@station_id')
         x_times = Time(np.sort(np.concatenate([
-            table_i["mjd_first_event"], table_i["mjd_first_event"], 
+            table_i["mjd_first_event"], table_i["mjd_first_event"],
             table_i["mjd_last_event"], table_i["mjd_last_event"]
         ])), format='mjd').fits
         trigger_active = np.zeros((len(x_times), len(trigger_cols)))
         if len(table_i):
             data_labels = np.concatenate([
-                ['Run {} (start)'.format(run)]*2 + ['Run {} (end)'.format(run)]*2 
+                ['Run {} (start)'.format(run)]*2 + ['Run {} (end)'.format(run)]*2
                 for run in table_i.run
             ])
         else:
@@ -78,7 +82,7 @@ def plot_active_triggers(n_clicks, time_value, station_ids):
             mask = 4 * np.where(table_i[trigger])[0]
             trigger_active[mask + 1, i_trigger] = 1
             trigger_active[mask + 2, i_trigger] = 1
-        
+
             fig.add_trace(
                 go.Scatter(
                     x=x_times,
@@ -90,7 +94,7 @@ def plot_active_triggers(n_clicks, time_value, station_ids):
                     text=data_labels,
                     line={'color':trigger_colors[i_trigger]}
                     ),
-                    #type='heatmap'),                    
+                    #type='heatmap'),
                 secondary_y=False,
                 row=i_station+1,
                 col=1
@@ -102,10 +106,11 @@ def plot_active_triggers(n_clicks, time_value, station_ids):
                 'ticktext':trigger_names, 'side':'left', 'title':'<b>Station {}</b>'.format(station_id)}})
         fig.update_layout({
             'yaxis{}'.format(2 * i_station + 2):{
-                'tickmode':'array', 'tickvals':np.unique(trigger_active), 
+                'tickmode':'array', 'tickvals':np.unique(trigger_active),
                 'ticktext':['Off','On'] * (len(np.unique(trigger_active)) // 2), 'showticklabels':True}
         })
-        
+    fig.update_layout(height=(len(station_ids)+1.5) * 100)
+
     return fig
 
 #show/hide button

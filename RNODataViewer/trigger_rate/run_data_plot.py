@@ -51,11 +51,15 @@ layout = html.Div([
     Output('run-data-plot', 'figure'),
     [Input('run-data-reload-button', 'n_clicks'),
      Input('run-data-plot-choice', 'value')],
-    [State('time-selector', 'value'),
+    [State('time-selector-start-date', 'date'),
+     State('time-selector-start-time', 'value'),
+     State('time-selector-end-date', 'date'),
+     State('time-selector-end-time', 'value'),
      State('station-id-dropdown', 'value')]
 )
-def plot_run_data(n_clicks, which_plot, time_value, station_ids):
-    t_start, t_end = time_value
+def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_time, station_ids):
+    t_start = Time(start_date).mjd // 1 + start_time
+    t_end = Time(end_date).mjd // 1 + end_time
     selected = run_table[(np.array(run_table["mjd_first_event"])>t_start) & (np.array(run_table["mjd_last_event"])<t_end)]
     if len(selected) == 0:
         return go.Figure()
@@ -65,7 +69,7 @@ def plot_run_data(n_clicks, which_plot, time_value, station_ids):
         table_i = selected.query('station==@station_id')
         normal_runs = table_i.loc[table_i.comment.isna()]
         special_runs = table_i.dropna(subset=["comment"])
-        if which_plot == 'run_length': 
+        if which_plot == 'run_length':
             y_normal = (normal_runs.mjd_last_event - normal_runs.mjd_first_event) * 1440
             y_special = (special_runs.mjd_last_event - special_runs.mjd_first_event) * 1440
         else:

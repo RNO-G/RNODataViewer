@@ -31,16 +31,16 @@ argparser.add_argument('--reverse-proxy-path', default=None, help="If running be
 argparser.add_argument('--waitress', const=True,  default=False, action='store_const', help="Use waitress instead of development server")
 #argparser.add_argument('--rno_data_dir', type=str, default=None, help="if set, use the passed <file_location> as top level directory where data (i.e. the stationXX directories) sit, rather than using 'RNO_DATA_DIR' environmental variable")
 parsed_args = argparser.parse_args()
-file_prefix = '.' 
-  
+file_prefix = '.'
+
 if parsed_args.reverse_proxy_path is not None:
     app.config.update({
     # as the proxy server will remove the prefix
-    'routes_pathname_prefix': '/', 
+    'routes_pathname_prefix': '/',
 
     # the front-end will prefix this string to the requests
     # that are made to the proxy server
-    'requests_pathname_prefix': parsed_args.reverse_proxy_path + "/" 
+    'requests_pathname_prefix': parsed_args.reverse_proxy_path + "/"
     })
 
     file_prefix = parsed_args.reverse_proxy_path
@@ -51,7 +51,7 @@ logging.info("Starting the monitoring application")
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
 filenames_root = run_table.filenames_root
 filenames_nur = []
-  
+
 RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)
 RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
 
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         if int(dash.__version__.split('.')[1]) < 0:
             logging.warning("Dash version 0.39.0 or newer is required, you are running version %s. Please update.", dash.__version__)
     port = parsed_args.port
-    
+
     #TODO if passed here, would need to pass properly to run_stats, which is imported by sub-tabs also
     #if parsed_args.rno_data_dir is not None:
     #    logging.warning("--rno_data_dir set to: %s.\
@@ -108,7 +108,7 @@ if __name__ == '__main__':
         webbrowser.open_new("http://localhost:{}".format(port))
 
     if parsed_args.waitress:
-        from waitress import serve 
+        from waitress import serve
         serve(app.server, host='0.0.0.0', port=port)
     else:
         app.run_server(debug=True, port=port, host='0.0.0.0')

@@ -27,7 +27,7 @@ class RNODataProviderRoot:
         self.__event_io._set_iterators(cut=cut)
         self.uproot_iterator_header = self.__event_io.uproot_iterator_header
         self.uproot_iterator_data = self.__event_io.uproot_iterator_data
-    
+
     def get_event_iterator(self):
         return self.__event_io.get_events
 
@@ -60,7 +60,7 @@ class RNODataProviderRoot:
         for filename in self.__filenames:
             file = uproot.open(filename)
             if 'combined' in file:
-                file = file['combined']            
+                file = file['combined']
             station_ids = np.append(station_ids, file['header']['station_number'].array(library='np'))
             readout_times = np.append(readout_times, file['header']['readout_time'].array(library='np'))
         return readout_times[station_ids == station_id]
@@ -71,7 +71,7 @@ class RNODataProviderRoot:
         for filename in self.__filenames:
             file = uproot.open(filename.replace("combined", "headers"))
             if 'hdr' in file:
-                file = file['hdr'] 
+                file = file['hdr']
             station_ids = np.append(station_ids, file['hdr']['station_number'].array(library='np'))
             readout_times = np.append(readout_times, file['hdr']['readout_time'].array(library='np'))
         return readout_times[station_ids == station_id]
