@@ -25,7 +25,6 @@ class RNODataProviderRoot:
         self.__event_io = readRNOGData()
         self.__event_io.begin(self.__filenames)
         self.__event_io._set_iterators(cut=cut)
-        self.uproot_iterator_header = self.__event_io.uproot_iterator_header
         self.uproot_iterator_data = self.__event_io.uproot_iterator_data
 
     def get_event_iterator(self):

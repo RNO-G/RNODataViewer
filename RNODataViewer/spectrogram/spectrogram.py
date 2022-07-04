@@ -65,11 +65,11 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
     # adjust the plotting scale only:
     if callback_context.triggered[0]['prop_id'].split('.')[0] == 'spectrogram-plot-max-freq-amp':
         try:
-            current_fig['layout']['coloraxis']['cmax']=max_freq_amp
+            current_fig['layout']['coloraxis']['cmax'] = max_freq_amp
             return current_fig
         except AttributeError as e:
             raise PreventUpdate
-    station_found, times, spectra, d_f, labels = RNODataViewer.spectrogram.spectrogram_data.get_spectrogram_data_root(station_id, channel_ids, file_names)
+    station_found, times, spectra, d_f, labels, triggers = RNODataViewer.spectrogram.spectrogram_data.get_spectrogram_data_root(station_id, channel_ids, file_names)
     if not station_found:
         return RNODataViewer.base.error_message.get_error_message('Station {} not found in events'.format(station_id))
     subplot_titles = []

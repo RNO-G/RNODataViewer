@@ -20,6 +20,7 @@ import webbrowser
 from NuRadioReco.modules.base import module
 from file_list.run_stats import RUN_TABLE, DATA_DIR #, RunStats
 logger = module.setup_logger(level=logging.INFO)
+# logger.setLevel(logging.DEBUG)
 
 #data_folder = DATA_DIR
 #if os.path.isfile(data_folder):
@@ -142,7 +143,7 @@ event_viewer_layout = html.Div([
                 html.Div('Time:', className='custom-table-td'),
                 html.Div('', className='custom-table-td-last', id='event-info-time')
             ], className='custom-table-row')
-        ], style={'flex': '1', 'min-width':180}, className='event-info-table'),
+        ], style={'flex': '1', 'min-width':180}, className='event-info-table', id='event-info-table'),
         dash.dash_table.DataTable(
             columns=[{"name":i, "id":i} for i in ['Trigger', 'Value']],
             style_header=dict(fontWeight='bold',textAlign='left'),
@@ -182,7 +183,7 @@ def get_page_content(selection):
      Input('filename', 'value'),
      Input('event-counter-slider', 'value')],
     [State('event-info-run', 'value'),
-     State('user_id', 'children')]
+     State('user_id', 'children')],
 )
 def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, event_id, j_plot_click_info, filename,
                      i_event, run_number, juser_id):
@@ -256,7 +257,7 @@ def update_slider_marks(filename, juser_id):
     user_id = json.loads(juser_id)
     nurio = browser_provider.get_file_handler(user_id, filename)
     n_events = nurio.get_n_events()
-    step_size = int(np.power(10., int(np.log10(n_events))))
+    step_size = int(np.power(10., int(np.log10(np.max([n_events,1])))))
     marks = {}
     for i in range(0, n_events, step_size):
         marks[i] = str(i)
