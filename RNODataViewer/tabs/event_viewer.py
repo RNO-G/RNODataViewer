@@ -33,7 +33,7 @@ browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
 browser_provider.set_filetype(True)
 
 def set_filename_dropdown(folder):
-        run_table = RUN_TABLE 
+        run_table = RUN_TABLE
         filtered_names = list(run_table.filenames_root)
         rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in run_table.iterrows()]
         return rrr
@@ -53,13 +53,13 @@ event_viewer_layout = html.Div([
                              options=set_filename_dropdown(data_folder),
                              multi=False,
                              #value=starting_filename,
-                            #  persistence=True,
-                            #  persistence_type='memory',
+                             persistence=True,
+                             persistence_type='memory',
                              className='custom-dropdown',style={'width':'100%'}),
                 html.Div([
                     html.Button('open file', id='btn-open-file', className='btn btn-default')
                 ], className='input-group-btn'),
-                ], className='input-group', style={"width":"75%"}),
+                ], className='input-group', style={"max-width":"75%"}),
             html.Div(
                 [
                     html.Div(
@@ -109,18 +109,6 @@ event_viewer_layout = html.Div([
                     'display': 'flex'
                 }
             ),
-            html.Div([
-                html.Div([
-                    dcc.Markdown('**Trigger name:**', className='custom-table-td'),
-                    html.Div('')], className='custom-table-row', id='trigger-names-row'
-                ),
-                html.Div([
-                    dcc.Markdown('**Triggered:**', className='custom-table-td'),
-                    html.Div('')], className='custom-table-row', id='trigger-bool-row'
-                )], style={
-                    'flex':1, 'border':'1px solid transparent', 'border-radius':'4px', 
-                    'border-color':"#ddd", 'margin-right':'5px', 'margin-bottom':'5px'}
-            )
         ], style={'flex': '7'}),
         html.Div([
             html.Div(
@@ -128,6 +116,7 @@ event_viewer_layout = html.Div([
                     dcc.Dropdown(
                         id='station-id-dropdown',
                         options=[],
+                        clearable=False,
                         multi=False,
                         # persistence=True,
                         # persistence_type='memory'
@@ -153,9 +142,21 @@ event_viewer_layout = html.Div([
                 html.Div('Time:', className='custom-table-td'),
                 html.Div('', className='custom-table-td-last', id='event-info-time')
             ], className='custom-table-row')
-        ], style={'flex': '1'}, className='event-info-table')
+        ], style={'flex': '1', 'min-width':180}, className='event-info-table'),
+        dash.dash_table.DataTable(
+            columns=[{"name":i, "id":i} for i in ['Trigger', 'Value']],
+            style_header=dict(fontWeight='bold',textAlign='left'),
+            style_table=dict(padding='0px 25px 0px 0px'),
+            style_data_conditional=[
+                {
+                    'if':{'filter_query':'{Value} = "True"', 'column_id':'Value'},
+                    'color':'green',
+                    'fontWeight':'bold'
+                }
+            ],
+            id='trigger-info-table')
     ], style={'display': 'flex'}),
-    traces.layout 
+    traces.layout
 ])
 
 
@@ -183,7 +184,7 @@ def get_page_content(selection):
     [State('event-info-run', 'value'),
      State('user_id', 'children')]
 )
-def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, event_id, j_plot_click_info, filename, 
+def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, event_id, j_plot_click_info, filename,
                      i_event, run_number, juser_id):
     context = dash.callback_context
     if filename is None:
@@ -295,8 +296,7 @@ def get_station_dropdown_options(filename, i_event, juser_id):
 
 
 @app.callback(
-    [Output('trigger-names-row', 'children'),
-     Output('trigger-bool-row', 'children')],
+    Output('trigger-info-table', 'data'),
     [Input('filename', 'value'),
      Input('station-id-dropdown', 'value'),
      Input('event-counter-slider', 'value')],
@@ -309,15 +309,16 @@ def fill_trigger_info_table(filename, station_id, event_i, juser_id):
     nurio = browser_provider.get_file_handler(user_id, filename)
     event = nurio.get_event_i(event_i)
     station = event.get_station(station_id)
-    trigger_names = [dcc.Markdown('**Trigger name:**', className='custom-table-td'),]
-    trigger_bools = [dcc.Markdown('**Triggered:**', className='custom-table-td'),]
+    trigger_names = []
+    trigger_bools = []
     for trigger_key in station.get_triggers():
         trigger = station.get_trigger(trigger_key)
-        print(trigger.get_name(), trigger.has_triggered())
-        trigger_names.append(html.Div(trigger.get_name(), className='custom-table-td'))
-        trigger_bools.append(html.Div(str(trigger.has_triggered()), className='custom-table-td'))
-    return trigger_names, trigger_bools
-
+        trigger_names.append(trigger.get_name())
+        trigger_bools.append(str(trigger.has_triggered()))
+    data_list = [
+        {'Trigger':trigger_names[i],'Value':trigger_bools[i]}
+        for i in range(len(trigger_names))]
+    return data_list
 
 @app.callback(
     Output('station-id-dropdown', 'value'),
