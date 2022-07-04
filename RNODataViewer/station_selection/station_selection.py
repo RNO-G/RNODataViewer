@@ -27,6 +27,8 @@ layout = html.Div([
                 id='station-id-dropdown',
                 options=station_entries,
                 value=[11,21,22],
+                persistence=True,
+                persistence_type='memory',
                 multi=True
             )
         ], className='option-select')
@@ -55,6 +57,8 @@ layout_run_browser = html.Div([
                   id='station-id-dropdown-single',
                   options=station_entries,
                   multi=False,
+                  persistence=True,
+                  persistence_type='memory',
                   style={'display':'inline-block','width':'100%'}
               )
           ], className='option-select')
@@ -68,6 +72,8 @@ layout_run_browser = html.Div([
                   options=channel_entries,
                   value=[0],
                   multi=True,
+                  persistence=True, #TODO - this doesn't work because of the circular callback with 'select-all'
+                  persistence_type='memory',
                   style={'width':'100%'}
               ),],style={'display':'inline-block', 'width':'95%'}),
             #   html.Div([
