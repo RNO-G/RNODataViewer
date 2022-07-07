@@ -56,7 +56,7 @@ def get_spectrogram_data_root(station_id, channel_ids, filenames=None):
 
     data_provider.set_iterators()
     for events in data_provider.uproot_iterator_data:
-        mask_station = events['station_number'] == station_id
+        mask_station = np.ones_like(events['station_number'], dtype=bool) #events['station_number'] == station_id
         gps_times.append(events['readout_time'][mask_station])
         for i_channel, channel_id in enumerate(channel_ids):
             if i_channel not in spectra:
@@ -102,7 +102,7 @@ def get_spectrogram_average_root(station_id, channel_ids, filenames=None, suppre
     spectra_all = np.zeros((len(channel_ids),len(frequencies)))
     spectra_force = np.zeros((len(channel_ids),len(frequencies)))
     for events in data_provider.uproot_iterator_data:
-        mask_station = events['station_number'] == station_id
+        mask_station = np.ones_like(events['station_number'], dtype=bool)
         try:
             mask_force_trigger = events['trigger_info.force_trigger'][mask_station]
         except ValueError:
