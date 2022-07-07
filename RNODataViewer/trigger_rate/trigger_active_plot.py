@@ -65,7 +65,7 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
         vertical_spacing=.2 / n_rows,
         specs=[[{'secondary_y':True},],]*n_rows)
     for i_station, station_id in enumerate(station_ids):
-        table_i = selected.query('station==@station_id')
+        table_i = selected.query('station==@station_id').sort_values(by='mjd_first_event')
         x_times = Time(np.sort(np.concatenate([
             table_i["mjd_first_event"], table_i["mjd_first_event"],
             table_i["mjd_last_event"], table_i["mjd_last_event"]
@@ -109,7 +109,8 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
                 'tickmode':'array', 'tickvals':np.unique(trigger_active),
                 'ticktext':['Off','On'] * (len(np.unique(trigger_active)) // 2), 'showticklabels':True}
         })
-    fig.update_layout(height=(len(station_ids)+1.5) * 100)
+    fig_height = np.max([(len(station_ids)+1.5) * 100, 350])
+    fig.update_layout(height=fig_height)
 
     return fig
 
