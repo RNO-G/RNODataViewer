@@ -4,3 +4,4 @@ file_list/__pycache__/
 base/__pycache__/
 spectrogram/__pycache__/
 noise_rms/__pycache__/
+data/*
