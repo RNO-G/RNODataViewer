@@ -46,3 +46,9 @@ except KeyError:
 rs = RunStats(DATA_DIR)
 RUN_TABLE = rs.get_table()
 run_table = RUN_TABLE
+
+station_entries = [
+    {'label':f"Station {station_id}", 'value':station_id}
+    for station_id in run_table.station.unique()
+    if station_id > 0 and station_id < 999
+]
