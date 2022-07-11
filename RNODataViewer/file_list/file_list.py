@@ -1,7 +1,10 @@
-import RNODataViewer.base.data_provider
+import RNODataViewer.base.data_provider_nur
+import RNODataViewer.base.data_provider_root
+#from NuRadioReco.eventbrowser.app import app
 from RNODataViewer.base.app import app
-import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash import html
+from dash import dcc
+from dash.dependencies import Input, Output, State
 
 layout = html.Div([
     html.Div([
@@ -16,22 +19,28 @@ layout = html.Div([
     ], className='panel panel-heading'),
     html.Div([
         html.Div('', id='file-list-display')
-    ], className='panel panel-body', style={'max-height': '200px', 'overflow': 'scroll'})
+    ], className='panel panel-body', style={'max-height': '100px', 'overflow': 'scroll'})
 ], className='panel panel-default')
 
 
 @app.callback(
     Output('file-list-display', 'children'),
-    [Input('file-list-reload-button', 'n_clicks')]
+    [Input('file-list-reload-button', 'n_clicks')],
+    [State('station-id-dropdown', 'value')]
 )
-def update_file_list(n_clicks):
-    data_provider = RNODataViewer.base.data_provider.RNODataProvider()
+def update_file_list(n_clicks, station_ids):
+    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
     filenames = data_provider.get_file_names()
     if filenames is None:
         return ''
     children = []
     for filename in filenames:
-        children.append(
-            html.Div('{}'.format(filename))
-        )
+        stn = int(filename.split("/")[-3].replace("station",""))
+        run = int(filename.split("/")[-2].replace("run", ""))
+        if type(station_ids) == int:
+            station_ids = [station_ids]
+        if stn in station_ids:
+            children.append(
+                    html.Div('{}'.format(filename))
+            )
     return children
