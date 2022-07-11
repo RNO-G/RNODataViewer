@@ -13,16 +13,16 @@ RUN pip install pandas
 RUN pip install waitress
 
 # Install NuRadioReco
-ADD RNODataViewer /usr/local/lib/python3.6/site-packages/RNODataViewer
+ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
 
-WORKDIR /usr/local/lib/python3.6/site-packages
+WORKDIR /usr/local/lib/python3.10/site-packages
 # Remove existing NuRadioMC from the base container (this was an old one downloaded as tarball)
 RUN rm -r NuRadioMC
 # Install rnog_eventbrowser branch of NuRadioMC via git
 RUN apt-get install -y git
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC
 # add it to the PYTHONPATH
-ENV PYTHONPATH=/usr/local/lib/python3.6/site-packages/NuRadioMC
+ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC
 
 USER   nuradio
 EXPOSE 8049
