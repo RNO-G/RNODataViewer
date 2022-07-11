@@ -26,6 +26,6 @@ ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC
 
 USER   nuradio
 EXPOSE 8049
-WORKDIR /usr/local/lib/python3.6/site-packages/RNODataViewer/
+WORKDIR /usr/local/lib/python3.10/site-packages/RNODataViewer/
 #CMD [ "python", "./monitoring.py","--port 8049", "--open-window"] #not sure this will pick up PYTHONPATH variable
 CMD python ./monitoring.py --port 8049 --waitress
