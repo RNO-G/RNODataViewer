@@ -17,9 +17,10 @@ import pandas as pd
 import os
 from file_list.run_stats import run_table
 import logging
+import requests
 logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.DEBUG)
 
 layout = html.Div([
     html.Div([
@@ -69,14 +70,16 @@ def get_updated_trigger_table(station_id):
                 f'Updating trigger rate table for station {station_id}:\n'
                 + f'Most recent event: {Time(time_last_event, format="unix").iso}\n'
                 + f'Latest event in table: {Time(np.max(df.time_unix), format="unix").iso}')
-            raise FileNotFoundError # this is hacky!
+            raise FileNotFoundError(f"Trigger rate table for station {station_id} is out of date, updating...") # this is hacky!
     except FileNotFoundError: # no file found, or update required
         if not os.path.exists(os.path.dirname(table_path)):
             os.makedirs(os.path.dirname(table_path))
-        df = pd.read_hdf(
-            f'https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5'
-        )
-        df.to_hdf(table_path, key='df', mode='w') # we store the table(s) locally
+        table_path_https = f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5"
+        df_bytes = requests.get(table_path_https)
+        with open(table_path, 'wb') as file:
+            file.write(df_bytes.content)
+
+        df = pd.read_hdf(table_path)
 
     return df
 
