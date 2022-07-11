@@ -15,9 +15,11 @@ RUN pip install waitress
 # Install NuRadioReco
 ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
 
+RUN echo $(ls -1 /usr/local/lib/)
 WORKDIR /usr/local/lib/python3.10/site-packages
 # Remove existing NuRadioMC from the base container (this was an old one downloaded as tarball)
-RUN rm -r NuRadioMC
+RUN echo $(ls -1 /usr/local/lib/)
+#RUN rm -r NuRadioMC
 # Install rnog_eventbrowser branch of NuRadioMC via git
 RUN apt-get install -y git
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC
