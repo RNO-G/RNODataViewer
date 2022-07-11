@@ -109,6 +109,6 @@ if __name__ == '__main__':
 
     if parsed_args.waitress:
         from waitress import serve
-        serve(app.server, host='0.0.0.0', port=port)
+        serve(app.server, host='0.0.0.0', port=port, channel_timeout=300)
     else:
         app.run_server(debug=True, port=port, host='0.0.0.0')
