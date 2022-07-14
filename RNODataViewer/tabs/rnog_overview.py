@@ -1,12 +1,17 @@
 import logging
+logging.basicConfig()
+logger = logging.getLogger("RNODataViewer")
+# logger.setLevel(logging.DEBUG)
 from dash.dependencies import Input
 import numpy as np
 import pandas as pd
 import astropy.time
+import datetime
 
 import dash
 from dash import html
 from dash import dcc
+from dash import callback_context
 from dash.exceptions import PreventUpdate
 
 from RNODataViewer.base.app import app
@@ -38,14 +43,15 @@ overview_layout = html.Div([
     # selection for combined (including waveforms, only subset is transferred) or header files, station ids
     # TODO make app respond to use header-only files
     html.Div([
+        dcc.Interval(id='update-dates', interval=18e5), # this doesn't actually matter, but we need an input to trigger the date updater on page load
         html.Div([
             html.Div([
                 html.Div(['Selected time range:'], className='option-label'),#style={'margin-top':8, 'margin-right':5}),
                 dcc.DatePickerSingle(
                     id='time-selector-start-date',
                     min_date_allowed=astropy.time.Time(slider_start, format='mjd').datetime,
-                    max_date_allowed=astropy.time.Time.now().datetime,
-                    date=astropy.time.Time((astropy.time.Time.now().mjd - 7), format='mjd').datetime,
+                    max_date_allowed=datetime.datetime.utcnow(),
+                    date=datetime.datetime.utcnow()-datetime.timedelta(days=7),
                     display_format="YYYY-MM-DD",
                     persistence=True,
                     persistence_type='memory',
@@ -63,8 +69,8 @@ overview_layout = html.Div([
                 dcc.DatePickerSingle(
                     id='time-selector-end-date',
                     min_date_allowed=astropy.time.Time(slider_start, format='mjd').datetime,
-                    max_date_allowed=astropy.time.Time.now().datetime,
-                    date=astropy.time.Time.now().datetime,
+                    max_date_allowed=datetime.datetime.utcnow(),
+                    date=datetime.datetime.utcnow(),
                     display_format="YYYY-MM-DD",
                     persistence=True,
                     persistence_type='memory',
@@ -104,6 +110,23 @@ overview_layout = html.Div([
     ], className='flexi-box')
 ])
 
+# callback to update the current / maximum allowed date
+@app.callback(
+    [dash.dependencies.Output('time-selector-start-date', 'date'),
+     dash.dependencies.Output('time-selector-start-date', 'max_date_allowed'),
+     dash.dependencies.Output('time-selector-end-date', 'date'),
+     dash.dependencies.Output('time-selector-end-date', 'max_date_allowed')],
+    dash.dependencies.Input('update-dates', 'n_intervals'),
+    dash.dependencies.State('time-selector-end-date', 'max_date_allowed')
+)
+def update_current_date(n_intervals, max_date):
+    current_time = astropy.time.Time.now().mjd
+    max_date_allowed = astropy.time.Time(max_date).mjd // 1
+    if current_time - max_date_allowed < 23/24: # we only force an update past 11 pm
+        raise PreventUpdate
+    now = datetime.datetime.utcnow() + datetime.timedelta(hours=2) # add one more day past 11 pm for convenience
+    start_date = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+    return [start_date, now, now, now]
 
 @app.callback(
     [dash.dependencies.Output('output-container-time-selector', 'children'),
@@ -121,8 +144,8 @@ def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21
     if t_start > t_end:
         raise PreventUpdate
     selected = run_table[(np.array(run_table["mjd_first_event"])>t_start) & (np.array(run_table["mjd_last_event"])<t_end)]
-    logging.info("Number of selected runs: %s (out of %s)", len(selected), len(run_table))
-
+    logger.info("Number of selected runs: %s (out of %s)", len(selected), len(run_table))
+    logger.debug(f"Current utc time: {str(end_date)}")
     RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(selected.filenames_root)
 
     return_strings = []
