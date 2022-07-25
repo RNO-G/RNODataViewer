@@ -49,7 +49,7 @@ if parsed_args.reverse_proxy_path is not None:
 logging.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
-filenames_root = run_table.filenames_root
+filenames_root = run_table.get_table().filenames_root
 filenames_nur = []
 
 RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)

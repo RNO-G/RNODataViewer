@@ -34,8 +34,8 @@ time_options = [
 
 #TODO replace this by something better
 try:
-    print(len(run_table))
-    slider_start = min(run_table["mjd_first_event"])
+    print(len(run_table.get_table()))
+    slider_start = min(run_table.get_table()["mjd_first_event"])
 except:
     slider_start = astropy.time.Time.now().mjd-365
 
@@ -143,8 +143,9 @@ def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21
     t_end = astropy.time.Time(end_date).mjd // 1 + end_time
     if t_start > t_end:
         raise PreventUpdate
-    selected = run_table[(np.array(run_table["mjd_first_event"])>t_start) & (np.array(run_table["mjd_last_event"])<t_end)]
-    logger.info("Number of selected runs: %s (out of %s)", len(selected), len(run_table))
+    tab = run_table.get_table()
+    selected = tab[(np.array(tab["mjd_first_event"])>t_start) & (np.array(tab["mjd_last_event"])<t_end)]
+    logger.info("Number of selected runs: %s (out of %s)", len(selected), len(tab))
     logger.debug(f"Current utc time: {str(end_date)}")
     RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(selected.filenames_root)
 

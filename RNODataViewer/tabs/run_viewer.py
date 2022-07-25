@@ -53,9 +53,10 @@ run_viewer_layout = html.Div([
 @app.callback(Output('file-name-dropdown-2', 'options'),
               [Input('station-id-dropdown-single', 'value')])
 def set_filename_dropdown(stations , run_table=run_table):
-        station_mask = np.array([np.isin(s, stations) for s in run_table.station], dtype=bool)
-        run_table_selected = run_table[station_mask]
-        filtered_names = list(run_table_selected.filenames_root)
+        tab = run_table.get_table()
+        station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
+        tab_selected = tab[station_mask]
+        filtered_names = list(tab_selected.filenames_root)
         data_provider_run.set_filenames([])
-        rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in run_table_selected.iterrows()]
+        rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
         return rrr

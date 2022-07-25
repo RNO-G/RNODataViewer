@@ -55,7 +55,8 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
          'pulse-per-second (pps)', 'forced trigger'
     ]
     trigger_colors = ['blue', 'red', 'green', 'purple', 'orange']
-    selected = run_table[(np.array(run_table["mjd_first_event"])>t_start) & (np.array(run_table["mjd_last_event"])<t_end)]
+    tab = run_table.get_table()
+    selected = tab[(np.array(tab["mjd_first_event"])>t_start) & (np.array(tab["mjd_last_event"])<t_end)]
     if len(selected) == 0:
         return go.Figure()
     n_rows = len(station_ids)

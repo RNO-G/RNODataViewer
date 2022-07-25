@@ -64,7 +64,7 @@ def get_updated_trigger_table(station_id):
     )
     try: # first, we check if the table is available locally
         df = pd.read_hdf(table_path)
-        time_last_event = Time(run_table.query('station==@station_id').mjd_last_event.max(), format='mjd').unix
+        time_last_event = Time(run_table.get_table().query('station==@station_id').mjd_last_event.max(), format='mjd').unix
         if time_last_event - np.max(df.time_unix) > 1800:
             logger.debug(
                 f'Updating trigger rate table for station {station_id}:\n'
@@ -120,13 +120,13 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
     for station_id in station_ids:
         df = get_updated_trigger_table(station_id)
         df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
-        run_table_cut = run_table.query(
+        run_table_cut = run_table.get_table().query(
             'station==@station_id&mjd_last_event>@t_start&mjd_first_event<@t_end'
         ).sort_values(by='mjd_first_event')
         bins = []
         runs = []
         for i in run_table_cut.index:
-            run, t_run_start, t_run_end = run_table.loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
+            run, t_run_start, t_run_end = run_table.get_table().loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
             t_run_start = Time(t_run_start, format='mjd').unix
             t_run_end = Time(t_run_end, format='mjd').unix
             t_start_i = np.max([t_run_start, t_start_unix])
