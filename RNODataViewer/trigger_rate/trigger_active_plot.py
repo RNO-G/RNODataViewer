@@ -47,11 +47,11 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
     t_start = Time(start_date).mjd // 1 + start_time
     t_end = Time(end_date).mjd // 1 + end_time
     trigger_cols = [
-        'has_rf0 (surface)', 'has_rf1 (deep)', 'has_ext (low threshold)',
-        'has_pps (PPS signal)', 'has_soft (forced)'
+        'has_rf0', 'has_rf1', 'has_ext',
+        'has_pps', 'has_soft'
     ]
     trigger_names = [
-        'surface trigger', 'deep trigger', 'low threshold',
+         'radiant trigger (RF0)', 'radiant trigger (RF1)', 'low threshold (Flower)',
          'pulse-per-second (pps)', 'forced trigger'
     ]
     trigger_colors = ['blue', 'red', 'green', 'purple', 'orange']
