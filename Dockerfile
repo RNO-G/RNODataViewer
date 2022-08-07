@@ -1,32 +1,32 @@
 FROM oci-reg-ztf.zeuthen.desy.de/radio/nu_radio_mc:latest
+# FROM python:3.10.5-slim
 LABEL maintainer="The NuRadioReco Authors <physics-astro-nuradiomcdev@lists.uu.se>"
 USER root
 
 RUN apt-get update
 RUN apt-get upgrade -y
 
-# Install core dependencies
-RUN pip install numpy scipy matplotlib tinydb>=4.1.1 tinydb-serialization aenum astropy radiotools>=0.2.0 h5py pyyaml peakutils requests pymongo dash plotly sphinx
-RUN pip install cython
-RUN pip install uproot==4.1.1 awkward
-RUN pip install pandas
-RUN pip install waitress
+WORKDIR /usr/local/lib/python3.10/site-packages
 
 # Install NuRadioReco
+RUN apt-get install -y git
+RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
+
+RUN python /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
+
+# Install RNODataViewer
 ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
 
-RUN echo $(ls -1 /usr/local/lib/)
-WORKDIR /usr/local/lib/python3.10/site-packages
-# Remove existing NuRadioMC from the base container (this was an old one downloaded as tarball)
-RUN echo $(ls -1 /usr/local/lib/)
-#RUN rm -r NuRadioMC
-# Install rnog_eventbrowser branch of NuRadioMC via git
-RUN apt-get install -y git
-RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC
-# add it to the PYTHONPATH
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC
 
-USER   nuradio
+# install additional dependencies not covered by the installation script (yet)
+RUN pip install tables waitress pandas
+
+RUN useradd nuradio
+# give user write permission to RNODataViewer data folder
+RUN chown -R nuradio /usr/local/lib/python3.10/site-packages/RNODataViewer/data
+
+USER nuradio
 EXPOSE 8049
 WORKDIR /usr/local/lib/python3.10/site-packages/RNODataViewer/
 #CMD [ "python", "./monitoring.py","--port 8049", "--open-window"] #not sure this will pick up PYTHONPATH variable
