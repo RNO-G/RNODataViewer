@@ -16,17 +16,17 @@ class RunStats:
     summary_csv = "https://www.zeuthen.desy.de/~shallman/rnog_run_summary.csv"
     def __init__(self, top_level_dir):
         self.__data_dir = top_level_dir
-        self.__last_modification_date = datetime.datetime.min
+        self.__last_modification_date = astropy.time.Time("1970-01-01")
         self.update_run_table()
 
     def update_run_table(self):
         # check the date on the webpage and see if it is newer than what was loaded
         r = requests.head(self.summary_csv)
-        url_date = parsedate(r.headers['last-modified'])
+        url_date = astropy.time.Time(parsedate(r.headers['last-modified']))
         if url_date > self.__last_modification_date:
             self.run_summary_from_csv(self.summary_csv, self.__data_dir)
             print("updating runtable. Expected files:", len(self.run_table))
-            if os.path.ismount(top_level_dir):
+            if os.path.ismount(self.__data_dir):
                 print("input directory is mounted. Skipping check if all files exist")
             else:
                 self.filter_available_runs()
@@ -70,6 +70,6 @@ run_table = RunStats(DATA_DIR)
 
 station_entries = [
     {'label':f"Station {station_id}", 'value':station_id}
-    for station_id in run_table.station.unique()
+    for station_id in run_table.get_table().station.unique()
     if station_id > 0 and station_id < 999
 ]
