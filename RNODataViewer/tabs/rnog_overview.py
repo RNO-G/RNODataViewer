@@ -32,13 +32,6 @@ time_options = [
     } for j in np.arange(0,1,1./48)
 ]
 
-#TODO replace this by something better
-try:
-    print(len(run_table.get_table()))
-    slider_start = min(run_table.get_table()["mjd_first_event"])
-except:
-    slider_start = astropy.time.Time.now().mjd-365
-
 overview_layout = html.Div([
     # selection for combined (including waveforms, only subset is transferred) or header files, station ids
     # TODO make app respond to use header-only files
@@ -49,7 +42,7 @@ overview_layout = html.Div([
                 html.Div(['Selected time range:'], className='option-label'),#style={'margin-top':8, 'margin-right':5}),
                 dcc.DatePickerSingle(
                     id='time-selector-start-date',
-                    min_date_allowed=astropy.time.Time(slider_start, format='mjd').datetime,
+                    min_date_allowed=astropy.time.Time("2021-07-14").datetime,
                     max_date_allowed=datetime.datetime.utcnow(),
                     date=datetime.datetime.utcnow()-datetime.timedelta(days=7),
                     display_format="YYYY-MM-DD",
@@ -68,7 +61,7 @@ overview_layout = html.Div([
                 dcc.Markdown('''-''', style={'margin-top':12, 'margin-right':5, 'margin-left':5}),
                 dcc.DatePickerSingle(
                     id='time-selector-end-date',
-                    min_date_allowed=astropy.time.Time(slider_start, format='mjd').datetime,
+                    min_date_allowed=astropy.time.Time("2021-07-14").datetime,
                     max_date_allowed=datetime.datetime.utcnow(),
                     date=datetime.datetime.utcnow(),
                     display_format="YYYY-MM-DD",

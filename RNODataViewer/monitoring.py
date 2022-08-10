@@ -18,6 +18,8 @@ from tabs import run_viewer
 from tabs import event_viewer
 
 import logging
+logging.basicConfig(format="%(levelname)s:%(asctime)s:%(name)s:%(message)s", datefmt="%H:%M:%S")
+
 #TODO: need for updating run_table with hidden div? eg. dcc.Interval or other solution?
 from file_list.run_stats import run_table
 import astropy.time
@@ -55,6 +57,7 @@ filenames_nur = []
 RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)
 RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
 
+app.title = "RNO-G Data Monitor"
 
 app.layout = html.Div([
     # header line with logo and title
