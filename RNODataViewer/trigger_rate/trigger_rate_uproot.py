@@ -22,6 +22,8 @@ logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
 # logger.setLevel(logging.DEBUG)
 
+RUN_TABLE = run_table.get_table() # may have to double check this doesn't break automatic updating?
+
 layout = html.Div([
     html.Div([
         html.Div([
@@ -75,7 +77,11 @@ def get_updated_trigger_table(station_id):
         if not os.path.exists(os.path.dirname(table_path)):
             os.makedirs(os.path.dirname(table_path))
         table_path_https = f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5"
-        df_bytes = requests.get(table_path_https)
+        try:
+            df_bytes = requests.get(table_path_https)
+        except requests.exceptions.ConnectionError:
+            logger.warning("Failed to update trigger rate tables, using local version instead...")
+            return df
         with open(table_path, 'wb') as file:
             file.write(df_bytes.content)
 
@@ -118,15 +124,17 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
             }
 
     for station_id in station_ids:
+        logger.debug(f"Getting trigger table for station {station_id}...")
         df = get_updated_trigger_table(station_id)
         df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
-        run_table_cut = run_table.get_table().query(
+        run_table_cut = RUN_TABLE.query(
             'station==@station_id&mjd_last_event>@t_start&mjd_first_event<@t_end'
         ).sort_values(by='mjd_first_event')
+        logger.debug("Making bins...")
         bins = []
         runs = []
         for i in run_table_cut.index:
-            run, t_run_start, t_run_end = run_table.get_table().loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
+            run, t_run_start, t_run_end = run_table_cut.loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
             t_run_start = Time(t_run_start, format='mjd').unix
             t_run_end = Time(t_run_end, format='mjd').unix
             t_start_i = np.max([t_run_start, t_start_unix])
@@ -154,6 +162,7 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
         runs = np.concatenate(runs)
         bin_widths = bins[1:] - bins[:-1]
 
+        logger.debug("Binning trigger rates...")
         for key in df.columns[2:]:
             if key=="all":
                 visible = True
@@ -181,6 +190,7 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
                 line=line_dict,
                 hovertemplate=f"Station {station_id}, run %{{customdata}}, trigger: {key}<br>%{{y}}<br>%{{x}}"
             ))
+    logger.debug("Making plot...")
     fig = go.Figure(plots)
     fig.update_layout(
           xaxis={'title': 'date'},
