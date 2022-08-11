@@ -12,7 +12,8 @@ WORKDIR /usr/local/lib/python3.10/site-packages
 RUN apt-get install -y git
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
 
-RUN python /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
+### Attempt if install_dev causes issue
+### RUN python /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
 # install additional dependencies not covered by the installation script (yet)
 RUN pip install tables waitress pandas
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC
