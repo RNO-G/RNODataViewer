@@ -23,6 +23,7 @@ logger = logging.getLogger("RNODataViewer")
 # logger.setLevel(logging.DEBUG)
 
 RUN_TABLE = run_table.get_table() # may have to double check this doesn't break automatic updating?
+trigger_names = ['all', 'rf', 'force', 'pps', 'ext', 'radiant', 'lt', 'RF0', 'RF1', 'RF-1']
 
 layout = html.Div([
     html.Div([
@@ -46,6 +47,12 @@ layout = html.Div([
                 clearable=False,
                 options=[{'label':f'{int(i)} min', 'value':i} for i in [1, 5, 10, 30, 60]],
                 value=10, style={'display':'inline-flex', 'min-width':100}),
+            dcc.Markdown('Triggers:', style={'margin-left':'5px', 'margin-right':'5px', 'display':'inline-block', 'margin-top':4}),
+            dcc.Dropdown(
+                id='trigger-rate-which-triggers',
+                clearable=True, multi=True,
+                options=[{'label':i, 'value':i} for i in trigger_names],
+                value=['all', 'force', 'radiant', 'lt'], style={'display':'inline-flex', 'min-width':100}),
             dcc.Graph(id='triggeruproot-plot')
         ], className='panel panel-body',id='triggeruproot-plot-container', style={'display':'none'})
     ], className='panel panel-default')
@@ -93,15 +100,16 @@ def get_updated_trigger_table(station_id):
 @app.callback(
     Output('triggeruproot-plot', 'figure'),
     [Input('triggeruproot-reload-button', 'n_clicks'),
-     Input('trigger-rate-zoom-level', 'value')],
+     Input('trigger-rate-zoom-level', 'value'),],
     [State('time-selector-start-date', 'date'),
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('station-id-dropdown', 'value')],
+     State('station-id-dropdown', 'value'),
+     State('trigger-rate-which-triggers', 'value')],
     prevent_initial_call=True
 )
-def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids):
+def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids, trigger_keys):
     t_start = Time(start_date).mjd // 1 + start_time
     t_end = Time(end_date).mjd // 1 + end_time
     t_start_unix = Time(t_start, format='mjd').unix
@@ -120,6 +128,9 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
             'pps_trigger': 'longdash',
             'ext_trigger': 'longdashdot',
             'radiant_trigger': 'dashdot',
+            'RF0_trigger': 'dashdot',
+            'RF1_trigger': 'dashdot',
+            'RF-1_trigger': 'dashdot',
             'lt_trigger': 'dot',
             'all': 'solid'
             }
@@ -164,16 +175,16 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
         bin_widths = bins[1:] - bins[:-1]
 
         logger.debug("Binning trigger rates...")
-        for key in df.columns[2:]:
+        for key in trigger_keys:
             if key=="all":
                 visible = True
                 line_dict = dict(width=2)
                 mode = 'lines+markers'
             else:
-                visible='legendonly'
+                visible= True #'legendonly'
                 line_dict = dict(dash=trigger_line_styles[f'{key}_trigger'])
                 mode = 'lines'
-            counts, _ = np.histogram(df.time_unix, bins=bins, weights=df.loc[:,key])
+            counts, _ = np.histogram(df.index.values, bins=bins, weights=df.loc[:,key])
             y = counts / bin_widths
             y[bin_widths > 1.5 * binwidth_sec] = np.nan # don't connect runs with large time gaps
             mask = np.where(~(
