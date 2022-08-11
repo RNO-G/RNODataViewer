@@ -1,4 +1,5 @@
-FROM python:3.10.5-slim
+FROM oci-reg-ztf.zeuthen.desy.de/radio/nu_radio_mc:latest
+#FROM python:3.10.5-slim
 LABEL maintainer="The NuRadioReco Authors <physics-astro-nuradiomcdev@lists.uu.se>"
 USER root
 
