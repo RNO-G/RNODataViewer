@@ -1,5 +1,4 @@
-FROM oci-reg-ztf.zeuthen.desy.de/radio/nu_radio_mc:latest
-# FROM python:3.10.5-slim
+FROM python:3.10.5-slim
 LABEL maintainer="The NuRadioReco Authors <physics-astro-nuradiomcdev@lists.uu.se>"
 USER root
 
@@ -13,18 +12,16 @@ RUN apt-get install -y git
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
 
 RUN python /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
+# install additional dependencies not covered by the installation script (yet)
+RUN pip install tables waitress pandas
+ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC
 
 # Install RNODataViewer
 ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
 
-ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC
-
-# install additional dependencies not covered by the installation script (yet)
-RUN pip install tables waitress pandas
-
 RUN useradd nuradio
 # give user write permission to RNODataViewer data folder
-RUN chown -R nuradio /usr/local/lib/python3.10/site-packages/RNODataViewer/data
+# RUN chown -R nuradio /usr/local/lib/python3.10/site-packages/RNODataViewer/data
 
 USER nuradio
 EXPOSE 8049
