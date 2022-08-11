@@ -61,7 +61,8 @@ def get_updated_trigger_table(station_id):
 
     """
     table_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        #os.path.dirname(os.path.dirname(__file__)),
+        '/tmp/RNODataViewer/',
         f'data/trigger_rates/trigger_rates_s{station_id}.hdf5'
     )
     try: # first, we check if the table is available locally
