@@ -20,7 +20,7 @@ import logging
 import requests
 logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 RUN_TABLE = run_table.get_table() # may have to double check this doesn't break automatic updating?
 trigger_names = ['all', 'rf', 'force', 'pps', 'ext', 'radiant', 'lt', 'RF0', 'RF1', 'RF-1']
@@ -204,9 +204,29 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
             ))
     logger.debug("Making plot...")
     fig = go.Figure(plots)
+    ### add a button to switch between linear / log plot:
+    updatemenus = [
+        dict(
+            type="buttons",
+            direction="left",
+            buttons=list([
+                dict(
+                    args=[{'yaxis.type': 'linear'}],
+                    label="Linear",
+                    method="relayout"
+                ),
+                dict(
+                    args=[{'yaxis.type': 'log'}],
+                    label="Log",
+                    method="relayout"
+                )
+            ])
+        ),
+    ]
     fig.update_layout(
           xaxis={'title': 'date'},
           yaxis={'title': 'Rate [Hz]'},
+          updatemenus=updatemenus,
           uirevision=True
       )
     fig.update_yaxes(rangemode='tozero')
