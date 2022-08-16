@@ -38,7 +38,7 @@ class RunStats:
         self.run_table = pd.read_csv(csv)
         self.run_table["mjd_first_event"] = np.array(astropy.time.Time(np.array(self.run_table["time first event"]).astype("str"), format='iso').mjd)
         self.run_table["mjd_last_event"] = np.array(astropy.time.Time(np.array(self.run_table["time last event"]).astype("str"), format='iso').mjd)
-        filenames_root = ["/".join([top_level_dir, path]) for path in self.run_table.path]
+        filenames_root = ["/".join([top_level_dir, path]).replace("inbox/inbox", "inbox") for path in self.run_table.path]
         print("will look for files like", filenames_root[0])
         self.run_table["filenames_root"] = filenames_root
 
