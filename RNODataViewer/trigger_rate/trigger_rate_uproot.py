@@ -74,6 +74,7 @@ def get_updated_trigger_table(station_id):
     )
     try: # first, we check if the table is available locally
         df = pd.read_hdf(table_path)
+        df["time_unix"] = df.index
         time_last_event = Time(run_table.get_table().query('station==@station_id').mjd_last_event.max(), format='mjd').unix
         if time_last_event - np.max(df.time_unix) > 1800:
             logger.debug(
@@ -94,7 +95,7 @@ def get_updated_trigger_table(station_id):
             file.write(df_bytes.content)
 
         df = pd.read_hdf(table_path)
-
+        df["time_unix"] = df.index
     return df
 
 @app.callback(
