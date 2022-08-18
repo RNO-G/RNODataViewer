@@ -41,10 +41,7 @@ def update_file_list(n_clicks, station_ids):
             station_ids = [station_ids]
         if stn in station_ids:
             children.append(
-                    html.Div('{}'.format(filename))
-            )
-            children.append(
-                    html.Div([html.Button("Download file", id="btn_image"), dcc.Download(id="download_file")])
+                    html.Div([html.Div('{}'.format(filename)),html.Div([html.Button("Download file", id="btn_image"), dcc.Download(id="download_file")])])
             )
     return children
 
@@ -57,6 +54,5 @@ def update_file_list(n_clicks, station_ids):
 def file_download(n_clicks):
     data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
     filenames = data_provider.get_file_names()
-    return dcc.send_file(
-        filenames[0]
-    )
+    return dict(content="Hello world!", filename="hello.txt")
+    #dcc.send_file(filenames[0])
