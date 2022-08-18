@@ -43,4 +43,20 @@ def update_file_list(n_clicks, station_ids):
             children.append(
                     html.Div('{}'.format(filename))
             )
+            children.append(
+                    html.Div([html.Button("Download file", id="btn_image"), dcc.Download(id="download_file")])
+            )
     return children
+
+
+@app.callback(
+    Output("download_file", "data"),
+    Input("btn_image", "n_clicks"),
+    prevent_initial_call=True,
+)
+def file_download(n_clicks):
+    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
+    filenames = data_provider.get_file_names()
+    return dcc.send_file(
+        filenames[0]
+    )
