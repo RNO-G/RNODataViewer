@@ -41,7 +41,10 @@ def update_file_list(n_clicks, station_ids):
             station_ids = [station_ids]
         if stn in station_ids:
             children.append(
-                    html.Div([html.Button('{}'.format(filename), id="btn_image", name='{}'.format(filename)), dcc.Download(id="download_file")])
+                    html.Div([html.Button('{}'.format(filename), id="btn_image", name='{}'.format(filename)),
+                              html.Button('headers.root', id="btn_image", name='{}'.format(filename.replace("combined.root", "headers.root"))),
+                              html.Button('daqstatus.root', id="btn_image", name='{}'.format(filename.replace("combined.root", "daqstatus.root"))),
+                              dcc.Download(id="download_file")])
             )
     return children
 
@@ -53,4 +56,4 @@ def update_file_list(n_clicks, station_ids):
     prevent_initial_call=True,
 )
 def file_download(n_clicks, the_file):
-    return dcc.send_file(the_file, filename=the_file.split("/")[-1])
+    return dcc.send_file(the_file, filename="_".join(the_file.split("/")[-3:]))
