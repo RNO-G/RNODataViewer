@@ -4,7 +4,8 @@ import RNODataViewer.base.data_provider_root
 from RNODataViewer.base.app import app
 from dash import html
 from dash import dcc
-from dash.dependencies import Input, Output, State
+import pandas as pd
+from dash.dependencies import Input, Output, State, dash_table
 
 layout = html.Div([
     html.Div([
@@ -46,14 +47,30 @@ def update_file_list(n_clicks, station_ids):
                               html.Button('daqstatus.root', id="btn_image", name='{}'.format(filename.replace("combined.root", "daqstatus.root"))),
                               dcc.Download(id="download_file")])
             )
+    df = pd.DataFrame({"File names": filenames})
+    children.append(dash_table.DataTable(df.to_dict('records'),[{"name": i, "id": i} for i in df.columns], id='selected_run_tbl'))
+    children.append(dcc.Download(id="download_file"))
     return children
 
 
 @app.callback(
     Output("download_file", "data"),
     Input("btn_image", "n_clicks"),
-    Input("btn_image", "name"),
+    State("btn_image", "name"),
     prevent_initial_call=True,
 )
 def file_download(n_clicks, the_file):
+    return dcc.send_file(the_file, filename="_".join(the_file.split("/")[-3:]))
+
+
+
+
+@app.callback(
+    Output('download_file', 'data'),
+    Input('selected_run_tbl', 'active_cell'),
+    prevent_initial_call=True
+)
+def update_download_selection(active_cell):
+    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
+    the_file = data_provider.get_file_names()[active_cell['row']]
     return dcc.send_file(the_file, filename="_".join(the_file.split("/")[-3:]))
