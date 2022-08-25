@@ -47,18 +47,12 @@ a web browser window should open automatically.
 
 ## Open points
 - General
-  - exchange the runtable generation from downloading a .csv (which is currently updated at desy via cron job) by a run database.
-  - switch from "new page" tabs to child tabs, such that data does not be reentered each time after switching tabs
-  - ensure runtable is updated (this is relevant for running web monitor on rnog_monitor.zeuthen.desy.de @ Desy) 
+  - exchange the runtable generation from downloading a .csv (which is currently updated at desy via cron job) by the run database on the RNOGlive database.
 - Overview page
-  - produce useful plots for the overview page from the table (these plots will update fast compared to the current trigger rate plots)
   - allow on the overview page to inspect also header files instead of the combined files (the latter include waveform datal
   - other suggestions?
 - Run viewer
   - 2d plot to inspect trace spectra
-  - 1D traces/spectra median/quantile projections
   - other suggestions?  
 - Event viewer
-  - remove path field (which does not speak to any callbacks anyway)
-  - channel labelling
-  - other suggestions?   
+  - other suggestions?
