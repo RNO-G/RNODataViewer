@@ -18,6 +18,8 @@ from tabs import run_viewer
 from tabs import event_viewer
 
 import logging
+logging.basicConfig(format="%(levelname)s:%(asctime)s:%(name)s:%(message)s", datefmt="%H:%M:%S")
+
 #TODO: need for updating run_table with hidden div? eg. dcc.Interval or other solution?
 from file_list.run_stats import run_table
 import astropy.time
@@ -49,12 +51,13 @@ if parsed_args.reverse_proxy_path is not None:
 logging.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
-filenames_root = run_table.filenames_root
+filenames_root = run_table.get_table().filenames_root
 filenames_nur = []
 
 RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)
 RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
 
+app.title = "RNO-G Data Monitor"
 
 app.layout = html.Div([
     # header line with logo and title
@@ -109,6 +112,6 @@ if __name__ == '__main__':
 
     if parsed_args.waitress:
         from waitress import serve
-        serve(app.server, host='0.0.0.0', port=port)
+        serve(app.server, host='0.0.0.0', port=port, channel_timeout=300)
     else:
         app.run_server(debug=True, port=port, host='0.0.0.0')

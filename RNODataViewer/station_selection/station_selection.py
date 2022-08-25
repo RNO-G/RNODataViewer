@@ -4,87 +4,59 @@ from dash import html
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
-from RNODataViewer.station_selection.station_list import station_entries, channel_entries
+from RNODataViewer.station_selection.station_list import channel_entries
+from RNODataViewer.file_list.run_stats import station_entries
 
 layout = html.Div([
-    # html.Div([
-    #         html.Div('File Type', className='option-label'),
-    #         html.Div([
-    #             dcc.Dropdown(
-    #                 id='file-type-dropdown',
-    #                 options=[
-    #                     {'label': 'waveforms', 'value': 'combined'},
-    #                     {'label': 'headers', 'value': 'headers'}
-    #                 ],
-    #                 value='combined'
-    #             )
-    #         ], className='option-select')
-    #     ], className='option-set'),
-    # html.Div([
-        html.Div('Station ID', className='option-label'),
+    html.Div('Station ID', className='option-label'),
         html.Div([
             dcc.Dropdown(
                 id='station-id-dropdown',
                 options=station_entries,
-                value=[11,21,22],
+                value=[k['value'] for k in station_entries],
                 persistence=True,
                 persistence_type='memory',
                 multi=True
             )
         ], className='option-select')
-    ], className='option-set')#,
-# ], className='input-group')
+    ], className='option-set')
 
 layout_run_browser = html.Div([
-      #html.Div([
-              #html.Div('File Type', className='option-label'),
-              #html.Div([
-              #    dcc.Dropdown(
-              #        id='file-type-dropdown',
-              #        options=[
-              #            {'label': 'ROOT', 'value': 'combined'},
-              #            {'label': 'headers', 'value': 'headers'}
-              #        #    {'label': '.nur', 'value': 'nur'}
-              #        ],
-              #        value='combined'
-              #    )
-              #], className='option-select')
-      #    ], className='option-set', style={'width': '20%', 'display': 'inline-block'}),
-      html.Div([
-          html.Div('Station ID', className='option-label'),
-          html.Div([
-              dcc.Dropdown(
-                  id='station-id-dropdown-single',
-                  options=station_entries,
-                  multi=False,
-                  persistence=True,
-                  persistence_type='memory',
-                  style={'display':'inline-block','width':'100%'}
-              )
-          ], className='option-select')
-          ], className='option-set', style={"flex":"1", 'display': 'inline-block', 'width':'16%'}),
-      html.Div([
-          html.Div('Channel IDs', className='option-label'),
-          html.Div([
-              html.Div([
-              dcc.Dropdown(
-                  id='channel-id-dropdown',
-                  options=channel_entries,
-                  value=[0],
-                  multi=True,
-                  persistence=True, #TODO - this doesn't work because of the circular callback with 'select-all'
-                  persistence_type='memory',
-                  style={'width':'100%'}
-              ),],style={'display':'inline-block', 'width':'95%'}),
-            #   html.Div([
-              dcc.Checklist(
-                  id='channel-id-select-all', options=[{'label':'All', 'value':'select_all'}],
-                  style={'display':'inline-block', 'margin-bottom':0, 'width':'4%','margin-left':'5px'}
-                  )
-            #   ], style={'display':'inline-block', 'width':'5%'})
-          ], className='option-select')
-          ], className='option-set', style={'display': 'inline-block', 'width':'82%'})
-      ], className='input-group', style={'flex': '1','display': 'inline-block', 'width':'100%'})
+    html.Div([
+        html.Div('Station ID', className='option-label'),
+        html.Div([
+            dcc.Dropdown(
+                id='station-id-dropdown-single',
+                options=station_entries,
+                multi=False,
+                persistence=True,
+                persistence_type='memory',
+                style={'display':'inline-block','width':'100%'}
+            )
+        ], className='option-select')
+        ], className='option-set', style={"flex":"1", 'display': 'inline-block', 'width':'16%'}),
+    html.Div([
+        html.Div('Channel IDs', className='option-label'),
+        html.Div([
+            html.Div([
+            dcc.Dropdown(
+                id='channel-id-dropdown',
+                options=channel_entries,
+                value=[0],
+                multi=True,
+                persistence=True, #TODO - this doesn't work because of the circular callback with 'select-all'
+                persistence_type='memory',
+                style={'width':'100%'}
+            ),],style={'display':'inline-block', 'width':'95%'}),
+        #   html.Div([
+            dcc.Checklist(
+                id='channel-id-select-all', options=[{'label':'All', 'value':'select_all'}],
+                style={'display':'inline-block', 'margin-bottom':0, 'width':'4%','margin-left':'5px'}
+                )
+        #   ], style={'display':'inline-block', 'width':'5%'})
+        ], className='option-select')
+        ], className='option-set', style={'display': 'inline-block', 'width':'82%'})
+    ], className='input-group', style={'flex': '1','display': 'inline-block', 'width':'100%'})
 
 @app.callback(
     [Output('channel-id-dropdown', 'value'),

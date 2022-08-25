@@ -17,9 +17,13 @@ import pandas as pd
 import os
 from file_list.run_stats import run_table
 import logging
+import requests
 logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
+RUN_TABLE = run_table.get_table() # may have to double check this doesn't break automatic updating?
+trigger_names = ['all', 'rf', 'force', 'pps', 'ext', 'radiant', 'lt', 'RF0', 'RF1', 'RF-1']
 
 layout = html.Div([
     html.Div([
@@ -43,6 +47,12 @@ layout = html.Div([
                 clearable=False,
                 options=[{'label':f'{int(i)} min', 'value':i} for i in [1, 5, 10, 30, 60]],
                 value=10, style={'display':'inline-flex', 'min-width':100}),
+            dcc.Markdown('Triggers:', style={'margin-left':'5px', 'margin-right':'5px', 'display':'inline-block', 'margin-top':4}),
+            dcc.Dropdown(
+                id='trigger-rate-which-triggers',
+                clearable=True, multi=True,
+                options=[{'label':i, 'value':i} for i in trigger_names],
+                value=['all', 'force', 'radiant', 'lt'], style={'display':'inline-flex', 'min-width':100}),
             dcc.Graph(id='triggeruproot-plot')
         ], className='panel panel-body',id='triggeruproot-plot-container', style={'display':'none'})
     ], className='panel panel-default')
@@ -58,40 +68,49 @@ def get_updated_trigger_table(station_id):
 
     """
     table_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        #os.path.dirname(os.path.dirname(__file__)),
+        '/tmp/RNODataViewer/',
         f'data/trigger_rates/trigger_rates_s{station_id}.hdf5'
     )
     try: # first, we check if the table is available locally
         df = pd.read_hdf(table_path)
-        time_last_event = Time(run_table.query('station==@station_id').mjd_last_event.max(), format='mjd').unix
+        df["time_unix"] = df.index
+        time_last_event = Time(run_table.get_table().query('station==@station_id').mjd_last_event.max(), format='mjd').unix
         if time_last_event - np.max(df.time_unix) > 1800:
             logger.debug(
                 f'Updating trigger rate table for station {station_id}:\n'
                 + f'Most recent event: {Time(time_last_event, format="unix").iso}\n'
                 + f'Latest event in table: {Time(np.max(df.time_unix), format="unix").iso}')
-            raise FileNotFoundError # this is hacky!
+            raise FileNotFoundError(f"Trigger rate table for station {station_id} is out of date, updating...") # this is hacky!
     except FileNotFoundError: # no file found, or update required
         if not os.path.exists(os.path.dirname(table_path)):
             os.makedirs(os.path.dirname(table_path))
-        df = pd.read_hdf(
-            f'https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5'
-        )
-        df.to_hdf(table_path, key='df', mode='w') # we store the table(s) locally
+        table_path_https = f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5"
+        try:
+            df_bytes = requests.get(table_path_https)
+        except requests.exceptions.ConnectionError:
+            logger.warning("Failed to update trigger rate tables, using local version instead...")
+            return df
+        with open(table_path, 'wb') as file:
+            file.write(df_bytes.content)
 
+        df = pd.read_hdf(table_path)
+        df["time_unix"] = df.index
     return df
 
 @app.callback(
     Output('triggeruproot-plot', 'figure'),
     [Input('triggeruproot-reload-button', 'n_clicks'),
-     Input('trigger-rate-zoom-level', 'value')],
+     Input('trigger-rate-zoom-level', 'value'),],
     [State('time-selector-start-date', 'date'),
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('station-id-dropdown', 'value')],
+     State('station-id-dropdown', 'value'),
+     State('trigger-rate-which-triggers', 'value')],
     prevent_initial_call=True
 )
-def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids):
+def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids, trigger_keys):
     t_start = Time(start_date).mjd // 1 + start_time
     t_end = Time(end_date).mjd // 1 + end_time
     t_start_unix = Time(t_start, format='mjd').unix
@@ -110,20 +129,25 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
             'pps_trigger': 'longdash',
             'ext_trigger': 'longdashdot',
             'radiant_trigger': 'dashdot',
+            'RF0_trigger': 'dashdot',
+            'RF1_trigger': 'dashdot',
+            'RF-1_trigger': 'dashdot',
             'lt_trigger': 'dot',
             'all': 'solid'
             }
 
     for station_id in station_ids:
+        logger.debug(f"Getting trigger table for station {station_id}...")
         df = get_updated_trigger_table(station_id)
         df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
-        run_table_cut = run_table.query(
+        run_table_cut = RUN_TABLE.query(
             'station==@station_id&mjd_last_event>@t_start&mjd_first_event<@t_end'
         ).sort_values(by='mjd_first_event')
+        logger.debug("Making bins...")
         bins = []
         runs = []
         for i in run_table_cut.index:
-            run, t_run_start, t_run_end = run_table.loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
+            run, t_run_start, t_run_end = run_table_cut.loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
             t_run_start = Time(t_run_start, format='mjd').unix
             t_run_end = Time(t_run_end, format='mjd').unix
             t_start_i = np.max([t_run_start, t_start_unix])
@@ -151,16 +175,17 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
         runs = np.concatenate(runs)
         bin_widths = bins[1:] - bins[:-1]
 
-        for key in df.columns[2:]:
+        logger.debug("Binning trigger rates...")
+        for key in trigger_keys:
             if key=="all":
                 visible = True
                 line_dict = dict(width=2)
                 mode = 'lines+markers'
             else:
-                visible='legendonly'
+                visible= True #'legendonly'
                 line_dict = dict(dash=trigger_line_styles[f'{key}_trigger'])
                 mode = 'lines'
-            counts, _ = np.histogram(df.time_unix, bins=bins, weights=df.loc[:,key])
+            counts, _ = np.histogram(df.index.values, bins=bins, weights=df.loc[:,key])
             y = counts / bin_widths
             y[bin_widths > 1.5 * binwidth_sec] = np.nan # don't connect runs with large time gaps
             mask = np.where(~(
@@ -178,10 +203,31 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
                 line=line_dict,
                 hovertemplate=f"Station {station_id}, run %{{customdata}}, trigger: {key}<br>%{{y}}<br>%{{x}}"
             ))
+    logger.debug("Making plot...")
     fig = go.Figure(plots)
+    ### add a button to switch between linear / log plot:
+    updatemenus = [
+        dict(
+            type="buttons",
+            direction="left",
+            buttons=list([
+                dict(
+                    args=[{'yaxis.type': 'linear'}],
+                    label="Linear",
+                    method="relayout"
+                ),
+                dict(
+                    args=[{'yaxis.type': 'log'}],
+                    label="Log",
+                    method="relayout"
+                )
+            ])
+        ),
+    ]
     fig.update_layout(
           xaxis={'title': 'date'},
           yaxis={'title': 'Rate [Hz]'},
+          updatemenus=updatemenus,
           uirevision=True
       )
     fig.update_yaxes(rangemode='tozero')

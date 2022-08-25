@@ -60,7 +60,8 @@ layout = html.Div([
 def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_time, station_ids):
     t_start = Time(start_date).mjd // 1 + start_time
     t_end = Time(end_date).mjd // 1 + end_time
-    selected = run_table[(np.array(run_table["mjd_first_event"])>t_start) & (np.array(run_table["mjd_last_event"])<t_end)]
+    tab = run_table.get_table()
+    selected = tab[(np.array(tab["mjd_first_event"])>t_start) & (np.array(tab["mjd_last_event"])<t_end)]
     if len(selected) == 0:
         return go.Figure()
     plot_colors = plotly.colors.qualitative.Plotly
