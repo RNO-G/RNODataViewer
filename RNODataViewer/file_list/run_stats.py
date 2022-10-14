@@ -3,43 +3,45 @@ import os,sys
 import astropy.time
 import pandas as pd
 from pathlib import Path
-
+import logging
 import NuRadioReco.utilities.metaclasses
 import requests
-import datetime
+import time
 import six
 from dateutil.parser import parse as parsedate
 
+logger = logging.getLogger('RNODataViewer')
 
 @six.add_metaclass(NuRadioReco.utilities.metaclasses.Singleton)
 class RunStats:
     summary_csv = "https://www.zeuthen.desy.de/~shallman/rnog_run_summary.csv"
     def __init__(self, top_level_dir):
         self.__data_dir = top_level_dir
-        self.__last_modification_date = astropy.time.Time("1970-01-01")
+        self.last_modification_date = astropy.time.Time("1970-01-01")
         self.update_run_table()
 
     def update_run_table(self):
         # check the date on the webpage and see if it is newer than what was loaded
         r = requests.head(self.summary_csv)
         url_date = astropy.time.Time(parsedate(r.headers['last-modified']))
-        if url_date > self.__last_modification_date:
+        if url_date > self.last_modification_date:
             self.run_summary_from_csv(self.summary_csv, self.__data_dir)
-            print("updating runtable. Expected files:", len(self.run_table))
-            if os.path.ismount(self.__data_dir):
+            logger.info("updating runtable. Expected files:", len(self.run_table))
+            if '/mnt' in self.__data_dir:
                 print("input directory is mounted. Skipping check if all files exist")
             else:
                 self.filter_available_runs()
-            print("available files:", len(self.run_table))
+            logger.info("available files:", len(self.run_table))
 
-            self.__last_modification_date = url_date
+            self.last_modification_date = url_date
+        self.last_modification_date = astropy.time.Time(time.time(), format='unix')
 
     def run_summary_from_csv(self, csv, top_level_dir="."):
         self.run_table = pd.read_csv(csv)
         self.run_table["mjd_first_event"] = np.array(astropy.time.Time(np.array(self.run_table["time first event"]).astype("str"), format='iso').mjd)
         self.run_table["mjd_last_event"] = np.array(astropy.time.Time(np.array(self.run_table["time last event"]).astype("str"), format='iso').mjd)
         filenames_root = ["/".join([top_level_dir, path]).replace("inbox/inbox", "inbox") for path in self.run_table.path]
-        print("will look for files like", filenames_root[0])
+        logger.info("will look for files like", filenames_root[0])
         self.run_table["filenames_root"] = filenames_root
 
     def filter_available_runs(self):
@@ -51,7 +53,7 @@ class RunStats:
                 #print(f'The file {path_to_file} exists')
             else:
                 files_found.append(False)
-                print(f'The file {path_to_file} does not exist')
+                logger.debug(f'The file {path_to_file} does not exist')
         is_there = np.array(files_found, dtype=bool)
         #is_there  = np.array([os.path.isfile(f) for f in self.run_table.filenames_root], dtype=bool)
         self.run_table = self.run_table[is_there]
@@ -62,7 +64,7 @@ class RunStats:
 
 try:
     DATA_DIR = os.environ["RNO_DATA_DIR"]
-    print("DATA DIRECTORY:", DATA_DIR)
+    logger.info("DATA DIRECTORY:", DATA_DIR)
 except KeyError:
     sys.exit("Set environment variable RNO_DATA_DIR to top level path holding directories station11,station21,station22, etc.")
 
