@@ -22,16 +22,20 @@ class RunStats:
 
     def update_run_table(self):
         # check the date on the webpage and see if it is newer than what was loaded
+        current_time = astropy.time.Time(time.time(), format='unix')
+        if (current_time - self.last_modification_date).sec < 60:
+            return None # no need to update more than once a minute
+        logger.debug("Checking for updated run table...")
         r = requests.head(self.summary_csv)
         url_date = astropy.time.Time(parsedate(r.headers['last-modified']))
         if url_date > self.last_modification_date:
             self.run_summary_from_csv(self.summary_csv, self.__data_dir)
-            logger.info("updating runtable. Expected files:", len(self.run_table))
+            logger.info(f"updating runtable. Expected files: {len(self.run_table)}")
             if '/mnt' in self.__data_dir:
-                print("input directory is mounted. Skipping check if all files exist")
+                logger.info("input directory is mounted. Skipping check if all files exist")
             else:
                 self.filter_available_runs()
-            logger.info("available files:", len(self.run_table))
+            logger.info(f"available files: {len(self.run_table)}")
 
             self.last_modification_date = url_date
         self.last_modification_date = astropy.time.Time(time.time(), format='unix')
@@ -41,7 +45,7 @@ class RunStats:
         self.run_table["mjd_first_event"] = np.array(astropy.time.Time(np.array(self.run_table["time first event"]).astype("str"), format='iso').mjd)
         self.run_table["mjd_last_event"] = np.array(astropy.time.Time(np.array(self.run_table["time last event"]).astype("str"), format='iso').mjd)
         filenames_root = ["/".join([top_level_dir, path]).replace("inbox/inbox", "inbox") for path in self.run_table.path]
-        logger.info("will look for files like", filenames_root[0])
+        logger.info(f"will look for files like {filenames_root[0]}")
         self.run_table["filenames_root"] = filenames_root
 
     def filter_available_runs(self):
