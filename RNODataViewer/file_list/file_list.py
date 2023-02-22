@@ -6,7 +6,7 @@ from dash import html
 from dash import dcc
 import pandas as pd
 from dash.dependencies import Input, Output, State
-# import dash_table
+# from dash import dash_table
 
 layout = html.Div([
     html.Div([
