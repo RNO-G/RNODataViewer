@@ -5,7 +5,8 @@ from RNODataViewer.base.app import app
 from dash import html
 from dash import dcc
 import pandas as pd
-from dash.dependencies import Input, Output, State, dash_table
+from dash.dependencies import Input, Output, State
+# from dash import dash_table
 
 layout = html.Div([
     html.Div([
