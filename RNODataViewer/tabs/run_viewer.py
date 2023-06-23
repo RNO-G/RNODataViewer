@@ -5,7 +5,7 @@ from dash import dcc
 from dash.dependencies import Input, Output, State
 from RNODataViewer.base.app import app
 import webbrowser
-import RNODataViewer.base.data_provider_root
+from RNODataViewer.base.data_provider_root import data_provider_run
 import RNODataViewer.base.data_provider_nur
 import RNODataViewer.file_list.file_list
 import RNODataViewer.station_selection.station_selection
@@ -18,7 +18,7 @@ from dash import callback_context
 from dash.exceptions import PreventUpdate
 
 
-data_provider_run = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
+# data_provider_run = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
 
 
 run_viewer_layout = html.Div([
@@ -86,5 +86,5 @@ def set_filename_dropdown(stations , run_table=run_table):
         tab_selected = tab[station_mask]
         filtered_names = list(tab_selected.filenames_root)
         data_provider_run.set_filenames([])
-        rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
+        rrr =  [{'label': "Station {}, Run {:.0f}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
         return rrr

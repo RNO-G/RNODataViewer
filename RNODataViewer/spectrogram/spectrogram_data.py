@@ -1,12 +1,16 @@
-import RNODataViewer.base.data_provider_root
+from RNODataViewer.base.data_provider_root import data_provider, trigger_names #trigger names are hardcoded for now
 import RNODataViewer.base.data_provider_nur
 import numpy as np
 import astropy.time
 from NuRadioReco.utilities import units
 import NuRadioReco.framework.base_trace
 import NuRadioReco.utilities.fft
+import time
+import logging
+logging.basicConfig()
+logger = logging.getLogger("RNODataViewer")
 
-
+### unused?
 def get_spectrogram_data_py(station_id, channel_ids, filenames=None):
     data_provider = RNODataViewer.base.data_provider_nur.RNODataProvider(channels=channel_ids)
     first_event = data_provider.get_first_event(station_id)
@@ -39,56 +43,71 @@ def get_spectrogram_data_py(station_id, channel_ids, filenames=None):
 
 # @lru_cache(maxsize=1)
 def get_spectrogram_data_root(station_id, channel_ids, filenames=None):
-    print("getting spectrogram data")
-    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot(channels=channel_ids)
+    logger.debug("getting spectrogram data...")
+    t0 = time.time()
+    # data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot(channels=channel_ids)
     if not filenames is None:
         data_provider.set_filenames(filenames)
     #first_event = data_provider.get_first_event(station_id)
     #if first_event is None:
     #    return False, None, None, None
     #channel = first_event.get_station(station_id).get_channel(channel_ids[0])
-    spectra = {}  # np.empty((len(channel_ids), data_provider.get_n_events(), channel.get_number_of_samples() // 2 + 1))
+    spectra = {i:[] for i in channel_ids}  # np.empty((len(channel_ids), data_provider.get_n_events(), channel.get_number_of_samples() // 2 + 1))
     gps_times = []
+    labels = []
     #TODO this is for testing why it is so slow
-    channel = NuRadioReco.framework.base_trace.BaseTrace()
-    channel.set_trace(np.zeros(2048), sampling_rate=3.2 * units.GHz)
-    d_f = channel.get_frequencies()[2] - channel.get_frequencies()[1]
+    # channel = NuRadioReco.framework.base_trace.BaseTrace()
+    # channel.set_trace(np.zeros(2048), sampling_rate=3.2 * units.GHz)
+    # d_f = channel.get_frequencies()[2] - channel.get_frequencies()[1]
 
-    data_provider.set_iterators()
-    for events in data_provider.uproot_iterator_data:
-        mask_station = np.ones_like(events['station_number'], dtype=bool) #events['station_number'] == station_id
-        gps_times.append(events['readout_time'][mask_station])
-        for i_channel, channel_id in enumerate(channel_ids):
-            if i_channel not in spectra:
-                spectra[i_channel] = []
-            traces = np.array(events['radiant_data[24][2048]'][:, channel_id, :])[mask_station]
+    # data_provider.set_iterators()
+    iterator = data_provider.get_event_iterator()
 
-            def convert(data):
-                tr = NuRadioReco.framework.base_trace.BaseTrace()
-                tr.set_trace(data * units.mV, sampling_rate=3.2 * units.GHz)
-                spectrum =  np.abs(tr.get_frequency_spectrum())
-                # set DC to zero
-                spectrum[0] = 0
-                return spectrum
-            if len(traces)==0:
-                continue
-            spec = np.apply_along_axis(convert, 1, np.array(traces))
-            spectra[i_channel].append(spec)
+    for event in iterator():
+        station = event.get_station(station_id)
+        # labels.append(f'Run {event.get_run_number()}, Event {event.get_id()}')
+        for channel_id in channel_ids:
+            channel = station.get_channel(channel_id)
+            spectra[channel_id].append(channel.get_frequency_spectrum())
+    #     mask_station = np.ones_like(events['station_number'], dtype=bool) #events['station_number'] == station_id
+    #     gps_times.append(events['readout_time'][mask_station])
+    #     for i_channel, channel_id in enumerate(channel_ids):
+    #         if i_channel not in spectra:
+    #             spectra[i_channel] = []
+    #         traces = np.array(events['radiant_data[24][2048]'][:, channel_id, :])[mask_station]
 
-    gps_times = np.concatenate(gps_times)
-    for it in spectra:
-        spectra[it] = np.concatenate(spectra[it])
-    subplot_titles = []
-    for channel_id in channel_ids:
-        subplot_titles.append('Channel {}'.format(channel_id))
-    sort_args = np.argsort(gps_times)
-    times = astropy.time.Time(gps_times, format="unix", scale="utc").fits
+    #         def convert(data):
+    #             tr = NuRadioReco.framework.base_trace.BaseTrace()
+    #             tr.set_trace(data * units.mV, sampling_rate=3.2 * units.GHz)
+    #             spectrum =  np.abs(tr.get_frequency_spectrum())
+    #             # set DC to zero
+    #             spectrum[0] = 0
+    #             return spectrum
+    #         if len(traces)==0:
+    #             continue
+    #         spec = np.apply_along_axis(convert, 1, np.array(traces))
+    #         spectra[i_channel].append(spec)
 
+    # gps_times = np.concatenate(gps_times)
+    # for it in spectra:
+    #     spectra[it] = np.concatenate(spectra[it])
+    # subplot_titles = []
+    # for channel_id in channel_ids:
+    #     subplot_titles.append('Channel {}'.format(channel_id))
+    # sort_args = np.argsort(gps_times)
+    # times = astropy.time.Time(gps_times, format="unix", scale="utc").fits
+    spectra = {i:np.array(j) for i,j in spectra.items()} # convert to numpy arrays for convenience
+    d_f = channel.get_frequencies()[1] - channel.get_frequencies()[0]
     event_ids = data_provider.get_event_ids(station_id)
     run_numbers = data_provider.get_run_numbers(station_id)
-    labels = np.array(['Run {}, Event {}'.format(run_numbers[i], event_ids[i]) for i in range(len(event_ids))])
+    gps_times = data_provider.get_event_times(station_id)
+    trigger_types = data_provider.get_trigger_types(station_id)
+    times = astropy.time.Time(gps_times, format='unix', scale='utc').fits
+    labels = np.array(['Run {}, Event {}, Trigger {}'.format(run_numbers[i], event_ids[i], trigger_types[i]) for i in range(len(event_ids))])
+    logger.debug(f'... obtained spectra for {len(labels)} events in {time.time()-t0:.0f} s. Making plot...')
     return True, times, spectra, d_f, labels, None
 
+#TODO - fix
 def get_spectrogram_average_root(station_id, channel_ids, filenames=None, suppress_zero_mode=False):
     data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot(channels=channel_ids)
     if not filenames is None:

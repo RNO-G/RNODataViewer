@@ -1,15 +1,17 @@
 import NuRadioReco.utilities.metaclasses
 import six
-from NuRadioReco.modules.io.rno_g.readRNOGData import readRNOGData
+from NuRadioReco.modules.io.RNO_G.readRNOGDataMattak import readRNOGData
 import uproot
 import numpy as np
+import os
 
+trigger_names = ["RADIANT0", "RADIANT1", "RADIANTX", "LT", "FORCE", "PPS", "UNKNOWN"]
 
 @six.add_metaclass(NuRadioReco.utilities.metaclasses.Singleton)
 class RNODataProviderRoot:
     def __init__(self, channels=None):
         self.__filenames = None
-        self.__event_io = None
+        self.__event_io = readRNOGData()
         self.__channels = channels
         self.uproot_iterator_data = None
         self.uproot_iterator_header = None
@@ -17,18 +19,18 @@ class RNODataProviderRoot:
     def set_filenames(self, filenames):
         if len(filenames) > 0:
             self.__filenames = filenames
-            #self.__event_io = readRNOGData()
-            #self.__event_io.begin(filenames)
+            # self.__event_io = readRNOGData()
+            # mattak for now can only read directories
+            self.__event_io.begin([os.path.dirname(f) for f in filenames])
             #self.__event_io.run(channels=self.__channels)
 
     def set_iterators(self, cut=None):
-        self.__event_io = readRNOGData()
         self.__event_io.begin(self.__filenames)
         self.__event_io._set_iterators(cut=cut)
         self.uproot_iterator_data = self.__event_io.uproot_iterator_data
 
     def get_event_iterator(self):
-        return self.__event_io.get_events
+        return self.__event_io.run
 
     def get_file_names(self):
         return self.__filenames
@@ -43,6 +45,8 @@ class RNODataProviderRoot:
         return self.__event_io.get_n_events()
 
     def get_waveforms(self, station_id, channels):
+        # for evt in self.__event_io.run():
+        #     evt.get_station(station_id)
         waveform_array = []
         for filename in self.__filenames:
             file = uproot.open(filename)
@@ -54,6 +58,8 @@ class RNODataProviderRoot:
         return np.concatenate(waveform_array)
 
     def get_event_times(self, station_id):
+        einfo = self.__event_io.get_events_information(['station', 'triggerTime'])
+        return [i['triggerTime'] for i in einfo.values() if i['station'] == station_id] #einfo['triggerTime'][einfo['station'] == station_id]
         station_ids = np.array([], dtype=int)
         readout_times = np.array([], dtype=float)
         for filename in self.__filenames:
@@ -76,6 +82,8 @@ class RNODataProviderRoot:
         return readout_times[station_ids == station_id]
 
     def get_event_ids(self, station_id):
+        einfo = self.__event_io.get_events_information(['station', 'eventNumber'])
+        return [i['eventNumber'] for i in einfo.values() if i['station'] == station_id]
         station_ids = np.array([], dtype=int)
         event_ids = np.array([], dtype=int)
         for filename in self.__filenames:
@@ -87,6 +95,8 @@ class RNODataProviderRoot:
         return event_ids[station_ids == station_id]
 
     def get_run_numbers(self, station_id):
+        einfo = self.__event_io.get_events_information(['station', 'run'])
+        return [i['run'] for i in einfo.values() if i['station'] == station_id]
         station_ids = np.array([], dtype=int)
         run_numbers = np.array([], dtype=int)
         for filename in self.__filenames:
@@ -96,4 +106,10 @@ class RNODataProviderRoot:
             station_ids = np.append(station_ids, file['header']['station_number'].array(library='np'))
             run_numbers = np.append(run_numbers, file['waveforms']['run_number'].array(library='np'))
         return run_numbers[station_ids == station_id]
+    
+    def get_trigger_types(self, station_id):
+        einfo = self.__event_io.get_events_information(['station', 'triggerType'])
+        return [i['triggerType'] for i in einfo.values() if i['station'] == station_id]
 
+data_provider = RNODataProviderRoot()
+data_provider_run = RNODataProviderRoot(create_new=True)

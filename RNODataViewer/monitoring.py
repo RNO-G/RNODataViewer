@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
+import logging
+logging.basicConfig(format="%(levelname)s:%(asctime)s:%(name)s:%(message)s", datefmt="%H:%M:%S")
 
 import dash
 from dash.dependencies import Input, Output, State
@@ -19,8 +21,6 @@ from tabs import rnog_overview
 from tabs import run_viewer
 from tabs import event_viewer
 
-import logging
-logging.basicConfig(format="%(levelname)s:%(asctime)s:%(name)s:%(message)s", datefmt="%H:%M:%S")
 
 #TODO: need for updating run_table with hidden div? eg. dcc.Interval or other solution?
 from file_list.run_stats import run_table
@@ -76,11 +76,12 @@ if parsed_args.reverse_proxy_path is not None:
 logging.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
-filenames_root = run_table.get_table().filenames_root
+filenames_root = run_table.get_table().filenames_root.values
 filenames_nur = []
 
-RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)
+# RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)
 RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
+
 
 app.title = "RNO-G Data Monitor"
 
@@ -213,7 +214,7 @@ def update_debug_logger_output(n_updates, current_value):
         if dashlogger is None: # this should never happen?
             raise PreventUpdate
 
-        log_output = ('\n'.join(dashlogger.queue)).replace('\n', '<BR>')
+        log_output = ('\n'.join(dashlogger.queue[::-1])).replace('\n', '<BR>')
         return log_output
 
 

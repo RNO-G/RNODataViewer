@@ -26,7 +26,7 @@ data_folder = DATA_DIR
 browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
 browser_provider.set_filetype(True)
 
-filename_table = run_table.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
+filename_table = run_table.get_table().loc[:, ['station', 'run', 'path']].drop_duplicates(subset=['station', 'run'])
 filename_table = filename_table.set_index(['station', 'run']).sort_index()
 
 
@@ -230,7 +230,7 @@ def persistent_run_selection(station_id, click_previous, click_next, current_run
 )
 def update_event_info_id_options(station_id, run_number, juser_id):
     try:
-        filename = filename_table.loc[(station_id, run_number), 'filenames_root']
+        filename = filename_table.loc[(station_id, run_number), 'path']
     except KeyError:
         return None, [], 0
     user_id = json.loads(juser_id)

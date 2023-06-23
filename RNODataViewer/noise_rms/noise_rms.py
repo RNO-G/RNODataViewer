@@ -61,7 +61,7 @@ def update_noise_rms_plot(n_clicks, station_id, channel_ids, file_names):
         return RNODataViewer.base.error_message.get_error_message('Station {} not found in events'.format(station_id))
     plots = []
     for i_channel, channel_id in enumerate(channel_ids):
-        scatter = go.Scatter(
+        scatter = go.Scattergl(
             x=times,
             y=noise_rms[i_channel] / units.mV,
             mode='markers',

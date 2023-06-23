@@ -14,11 +14,11 @@ import pandas as pd
 from file_list.run_stats import run_table
 idx = pd.IndexSlice
 run_info_options = [
-    {'label':'Number of events (Greenland)', 'value':'n_events (greenland)'},
-    {'label':'Trigger rate [Hz]', 'value':'trigger rate [Hz]'},
-    {'label':'Number of events (transferred)', 'value':'n_events (transferred)'},
-    {'label':'Transfer subsampling', 'value':'transfer subsampling'},
-    {'label':'Soft rate [Hz]', 'value':'soft_rate [Hz]'},
+    {'label':'Number of events (recorded)', 'value':'n_events_recorded'},
+    {'label':'Trigger rate [Hz]', 'value':'trigger_rate'},
+    {'label':'Number of events (transferred)', 'value':'n_events_transferred'},
+    {'label':'Transfer subsampling', 'value':'transfer_subsampling'},
+    {'label':'Soft trigger rate [Hz]', 'value':'soft_trigger_rate'},
     {'label':'Run duration [min]', 'value':'run_length'}
 ]
 
@@ -40,7 +40,7 @@ layout = html.Div([
         html.Div([
             dcc.Dropdown(
                 id='run-data-plot-choice', options=run_info_options,
-                value='n_events (greenland)'
+                value='n_events_recorded'
             ),
             dcc.Graph(id='run-data-plot')
         ], className='panel panel-body',id='run-data-plot-container', style={'display':'none'})
@@ -58,29 +58,30 @@ layout = html.Div([
      State('station-id-dropdown', 'value')]
 )
 def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_time, station_ids):
-    t_start = Time(start_date).mjd // 1 + start_time
-    t_end = Time(end_date).mjd // 1 + end_time
+    t_start = Time(start_date) + TimeDelta(start_time, format='sec')
+    t_end = Time(end_date) + TimeDelta(end_time, format='sec')
     tab = run_table.get_table()
-    selected = tab[(np.array(tab["mjd_first_event"])>t_start) & (np.array(tab["mjd_last_event"])<t_end)]
+    selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)]
     if len(selected) == 0:
         return go.Figure()
     plot_colors = plotly.colors.qualitative.Plotly
     fig = go.Figure()
     for i_station, station_id in enumerate(station_ids):
         table_i = selected.query('station==@station_id')
-        normal_runs = table_i.loc[table_i.comment.isna()]
-        special_runs = table_i.dropna(subset=["comment"])
+        physics_mask = table_i.run_type == 'physics'
+        normal_runs = table_i[physics_mask]
+        special_runs = table_i[~physics_mask]
         if which_plot == 'run_length':
-            y_normal = (normal_runs.mjd_last_event - normal_runs.mjd_first_event) * 1440
-            y_special = (special_runs.mjd_last_event - special_runs.mjd_first_event) * 1440
+            y_normal = TimeDelta(normal_runs.time_end - normal_runs.time_start).sec / 60
+            y_special = TimeDelta(special_runs.time_end - special_runs.time_start).sec / 60
         else:
             y_normal = normal_runs.loc[idx[:], which_plot]
             y_special = special_runs.loc[idx[:], which_plot]
-        normal_runs = table_i.loc[table_i.comment.isna()]
-        special_runs = table_i.dropna(subset=["comment"])
+        # normal_runs = table_i.loc[table_i.comment.isna()]
+        # special_runs = table_i.dropna(subset=["comment"])
         fig.add_trace(
             go.Scatter(
-                x=Time(normal_runs.mjd_first_event, format='mjd').fits,
+                x=Time(normal_runs.time_start).fits,
                 y=y_normal,
                 mode='markers',
                 name="Station {}".format(station_id),
@@ -92,13 +93,13 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
         )
         fig.add_trace(
             go.Scatter(
-                x=Time(special_runs.mjd_first_event, format='mjd').fits,
+                x=Time(special_runs.time_start).fits,
                 y=y_special,
                 mode='markers',
                 name="Station {} (special run)".format(station_id),
                 marker={'color':plot_colors[i_station % len(plot_colors)], 'symbol':34, 'line_width':1, 'line_color':plot_colors[i_station % len(plot_colors)], 'opacity':1.0, 'size':7},
                 customdata=special_runs.run,
-                meta=special_runs.comment.astype('str'),
+                meta=special_runs.run_type.astype('str'),
                 hovertemplate="%{y}<br>%{x}<br>Run %{customdata}<br>%{meta}",
                 legendrank=i_station+1000
             )
