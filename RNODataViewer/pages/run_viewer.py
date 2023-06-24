@@ -1,9 +1,9 @@
-from dash import html
+from dash import html, dcc, callback
 import os
 import dash
-from dash import dcc
+from dash import dcc, html, callback
 from dash.dependencies import Input, Output, State
-from RNODataViewer.base.app import app
+
 import webbrowser
 from RNODataViewer.base.data_provider_root import data_provider_run
 import RNODataViewer.base.data_provider_nur
@@ -17,6 +17,7 @@ import numpy as np
 from dash import callback_context
 from dash.exceptions import PreventUpdate
 
+dash.register_page(__name__, path='/runViewer')
 
 # data_provider_run = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
 
@@ -54,7 +55,9 @@ run_viewer_layout = html.Div([
     ], className='flexi-box')
 ])
 
-@app.callback(
+layout = run_viewer_layout # needed for pages support
+
+@callback(
     Output('file-name-dropdown-2', 'value'),
     [Input('select-last-run', 'n_clicks'),
      Input('select-last-24h', 'n_clicks'),
@@ -78,7 +81,7 @@ def select_runs_button(last_run, last_24h, stations, run_table=run_table):
     else:
         raise PreventUpdate
 
-@app.callback(Output('file-name-dropdown-2', 'options'),
+@callback(Output('file-name-dropdown-2', 'options'),
               [Input('station-id-dropdown-single', 'value')])
 def set_filename_dropdown(stations , run_table=run_table):
         tab = run_table.get_table()

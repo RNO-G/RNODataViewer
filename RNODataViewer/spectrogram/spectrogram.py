@@ -1,8 +1,8 @@
 from dash.exceptions import PreventUpdate
 import numpy as np
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -45,7 +45,7 @@ channel_mapping = pd.DataFrame(channel_entries)
 channel_mapping.set_index("value", inplace=True)
 
 
-@app.callback(
+@callback(
     Output('spectrogram-plot', 'figure'),
     [Input('spectrogram-reload-button', 'n_clicks'),
      Input('spectrogram-plot-max-freq-amp', 'value')],
@@ -113,7 +113,7 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
     fig['layout']['uirevision'] = file_names
     return fig
 
-@app.callback(
+@callback(
     [Output('spectrogram-plot-container', 'style'),
      Output('spectrogram-showhide','children')],
     [Input('spectrogram-reload-button', 'n_clicks'),

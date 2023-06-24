@@ -1,8 +1,8 @@
 import RNODataViewer.base.data_provider_nur
 import RNODataViewer.base.data_provider_root
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 import pandas as pd
 from dash.dependencies import Input, Output, State
@@ -25,7 +25,7 @@ layout = html.Div([
 ], className='panel panel-default')
 
 
-@app.callback(
+@callback(
     Output('file-list-display', 'children'),
     [Input('file-list-reload-button', 'n_clicks')],
     [State('station-id-dropdown', 'value')]
@@ -54,7 +54,7 @@ def update_file_list(n_clicks, station_ids):
     return children
 
 
-#@app.callback(
+#@callback(
 #    Output("download_file", "data"),
 #    Input("btn_image", "n_clicks"),
 #    State("btn_image", "name"),
@@ -63,7 +63,7 @@ def update_file_list(n_clicks, station_ids):
 #def file_download(n_clicks, the_file):
 #    return dcc.send_file(the_file, filename="_".join(the_file.split("/")[-3:]))
 
-#@app.callback(
+#@callback(
 #    Output('download_file', 'data'),
 #    Input('selected_run_tbl', 'active_cell'),
 #    prevent_initial_call=True

@@ -32,7 +32,7 @@ class RunStats:
         if current_time > self.last_modification_date:
             update_table = self.run_table_class.get_table(start_time=self.last_modification_date)
             if len(update_table):
-                update_table = self.add_paths_to_run_table(run_table, self.__data_dir)
+                update_table = self.add_paths_to_run_table(update_table, self.__data_dir)
                 update_table = self.filter_available_runs(update_table)
                 self.run_table.update(update_table)
             logger.info(f"updating runtable. Expected files: {len(self.run_table)}")

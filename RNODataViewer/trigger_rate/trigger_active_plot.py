@@ -1,6 +1,6 @@
 import numpy as np
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -34,7 +34,7 @@ layout = html.Div([
     ], className='panel panel-default')
 ])
 
-@app.callback(
+@callback(
     Output('active-triggers-plot', 'figure'),
     Input('active-triggers-reload-button', 'n_clicks'),
     [State('time-selector-start-date', 'date'),
@@ -116,7 +116,7 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
     return fig
 
 #show/hide button
-@app.callback(
+@callback(
     [Output('active-triggers-plot-container', 'style'),
      Output('active-triggers-plot-showhide','children')],
     [Input('active-triggers-reload-button', 'n_clicks'),

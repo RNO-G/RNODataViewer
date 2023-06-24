@@ -9,12 +9,12 @@ import astropy.time
 import datetime
 
 import dash
-from dash import html
-from dash import dcc
-from dash import callback_context
+from dash import html, dcc, callback, dcc, callback
+# from dash import dcc
+# from dash import callback_context
 from dash.exceptions import PreventUpdate
 
-from RNODataViewer.base.app import app
+
 import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.data_provider_nur
 
@@ -25,6 +25,8 @@ import RNODataViewer.trigger_rate.trigger_active_plot
 import RNODataViewer.trigger_rate.run_data_plot
 from file_list.run_stats import run_table
 
+dash.register_page(__name__, path='/')
+
 time_options = [
     {
         'label':f'{j//3600:02d}:{(j%3600)//60:02d}',
@@ -32,7 +34,7 @@ time_options = [
     } for j in np.arange(0, 24*3600, 1800)
 ]
 
-overview_layout = html.Div([
+layout = html.Div([
     # selection for combined (including waveforms, only subset is transferred) or header files, station ids
     # TODO make app respond to use header-only files
     html.Div([
@@ -103,8 +105,10 @@ overview_layout = html.Div([
     ], className='flexi-box')
 ])
 
+# layout = overview_layout # needed for pages support
+
 # callback to update the current / maximum allowed date
-@app.callback(
+@callback(
     [dash.dependencies.Output('time-selector-start-date', 'date'),
      dash.dependencies.Output('time-selector-start-date', 'max_date_allowed'),
      dash.dependencies.Output('time-selector-end-date', 'date'),
@@ -121,7 +125,7 @@ def update_current_date(n_intervals, max_date):
     start_date = datetime.datetime.utcnow() - datetime.timedelta(days=7)
     return [start_date, now, now, now]
 
-@app.callback(
+@callback(
     [dash.dependencies.Output('output-container-time-selector', 'children'),
     #  dash.dependencies.Output('time-selector-start-time', 'options'),
     #  dash.dependencies.Output('time-selector-end-time', 'options'),

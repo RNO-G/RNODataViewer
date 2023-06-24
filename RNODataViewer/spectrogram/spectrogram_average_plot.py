@@ -1,7 +1,7 @@
 import numpy as np
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -48,7 +48,7 @@ layout = html.Div([
     ], className='panel panel-default')
 ])
 
-@app.callback(
+@callback(
     Output('spectrogram-avg-plot', 'figure'),
     [Input('spectrogram-avg-reload-button', 'n_clicks'),
      Input('spectrogram-avg-plot-layout', 'value')],
@@ -221,7 +221,7 @@ def update_spectrogram_plot(n_clicks, plot_layout, station_id, channel_ids, file
     fig.update_layout({'height': 300 * n_rows})
     return fig
 
-@app.callback(
+@callback(
     [Output('spectrogram-avg-plot-container', 'style'),
      Output('spectrogram-avg-showhide','children')],
     [Input('spectrogram-avg-reload-button', 'n_clicks'),

@@ -1,6 +1,6 @@
 import numpy as np
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -47,7 +47,7 @@ layout = html.Div([
     ], className='panel panel-default')
 ])
 
-@app.callback(
+@callback(
     Output('run-data-plot', 'figure'),
     [Input('run-data-reload-button', 'n_clicks'),
      Input('run-data-plot-choice', 'value')],
@@ -108,7 +108,7 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
     fig['layout']['legend']['uirevision'] = n_clicks
     return fig
 
-@app.callback(
+@callback(
     [Output('run-data-plot-container', 'style'),
      Output('run-data-showhide','children')],
     [Input('run-data-reload-button', 'n_clicks'),

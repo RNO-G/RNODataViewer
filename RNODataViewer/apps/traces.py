@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function  # , unicode_literals
-from dash import html
+from dash import html, dcc, callback
 import NuRadioReco.eventbrowser.apps.trace_plots.channel_time_trace
 import NuRadioReco.eventbrowser.apps.trace_plots.channel_spectrum
 import NuRadioReco.eventbrowser.apps.trace_plots.multi_channel_plot
@@ -37,7 +37,7 @@ layout = html.Div([
     ], style={'display': 'flex'})
 ])
 
-@app.callback(
+@callback(
     [Output('channel_traces_layout', 'children'),
     Output('toggle_channel_traces', 'children')],
     [Input('toggle_channel_traces', 'n_clicks')],
@@ -50,7 +50,7 @@ def toggle_channel_trace_plot(button_clicks, showhide):
     else:
         return NuRadioReco.eventbrowser.apps.trace_plots.channel_time_trace.layout, 'Hide'
 
-@app.callback(
+@callback(
     [Output('channel_spectrum_layout', 'children'),
     Output('toggle_channel_spectrum', 'children')],
     [Input('toggle_channel_spectrum', 'n_clicks')],

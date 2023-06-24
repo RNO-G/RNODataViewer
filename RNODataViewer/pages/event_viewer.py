@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function  # , unicode_literals
 from dash.dependencies import Input, Output, State
-from dash import dcc
-from dash import html
+from dash import dcc, html, callback
 import dash
 import json
 from dash.exceptions import PreventUpdate
@@ -9,7 +8,7 @@ import numpy as np
 import uuid
 import glob
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
+
 from RNODataViewer.apps import traces
 import os
 import argparse
@@ -21,6 +20,8 @@ from NuRadioReco.modules.base import module
 from file_list.run_stats import run_table, DATA_DIR, station_entries #, RunStats
 logger = module.setup_logger(level=logging.INFO)
 
+dash.register_page('__name__', path='/eventViewer')
+
 data_folder = DATA_DIR
 
 browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
@@ -28,7 +29,6 @@ browser_provider.set_filetype(True)
 
 filename_table = run_table.get_table().loc[:, ['station', 'run', 'path']].drop_duplicates(subset=['station', 'run'])
 filename_table = filename_table.set_index(['station', 'run']).sort_index()
-
 
 event_viewer_layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -146,8 +146,9 @@ event_viewer_layout = html.Div([
     traces.layout
 ])
 
+layout = event_viewer_layout # needed for pages support
 
-@app.callback(
+@callback(
     Output('content', 'children'),
     [Input('content-selector', 'value')]
 )
@@ -157,7 +158,7 @@ def get_page_content(selection):
     return []
 
 
-@app.callback(
+@callback(
     Output('station-id-dropdown', 'value'),
     [Input('btn-previous-station', 'n_clicks'),
      Input('btn-next-station', 'n_clicks')],
@@ -184,7 +185,7 @@ def change_station_from_button(previous, next, current_station_value):
             station_value = station_values[current_station_i + 1]
     return station_value
 
-@app.callback(
+@callback(
     Output('event-info-run-container','children'),
     [Input('station-id-dropdown', 'value'),
      Input('btn-previous-run', 'n_clicks'),
@@ -220,7 +221,7 @@ def persistent_run_selection(station_id, click_previous, click_next, current_run
 
     return station_dropdown
 
-@app.callback(
+@callback(
     [Output('filename', 'value'),
     Output('event-info-id', 'options'),
     Output('event-counter-slider', 'max')],
@@ -241,7 +242,7 @@ def update_event_info_id_options(station_id, run_number, juser_id):
     event_ids = [i[1] for i in nurio.get_event_ids() if i[0] == run_number]
     return filename, [{'label':i, 'value':i} for i in event_ids], len(event_ids)-1
 
-@app.callback(
+@callback(
     [Output('event-counter-slider', 'value'),
      Output('event-info-id', 'value')],
     [Input('btn-next-event', 'n_clicks_timestamp'),
@@ -281,7 +282,7 @@ def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, filenam
 
 
 
-@app.callback(Output('user_id', 'children'),
+@callback(Output('user_id', 'children'),
               [Input('url', 'pathname')],
               [State('user_id', 'children')])
 def set_uuid(pathname, juser_id):
@@ -291,7 +292,7 @@ def set_uuid(pathname, juser_id):
     return json.dumps(user_id)
 
 
-@app.callback(
+@callback(
     Output('trigger-info-table', 'data'),
     [Input('filename', 'value'),
      Input('station-id-dropdown', 'value'),
@@ -317,7 +318,7 @@ def fill_trigger_info_table(filename, station_id, event_i, juser_id):
     return data_list
 
 
-# @app.callback(
+# @callback(
 #     Output('event-info-run', 'options'),
 #     Input('station-id-dropdown', 'value'),
 # )
@@ -328,7 +329,7 @@ def fill_trigger_info_table(filename, station_id, event_i, juser_id):
 #     return [{'label':i, 'value':i} for i in run_numbers]
 
 
-@app.callback(
+@callback(
     Output('event-info-time', 'children'),
     [Input('event-info-id', 'value'),
      Input('filename', 'value'),

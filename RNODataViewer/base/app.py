@@ -6,9 +6,9 @@ import os
 os.environ["FLASK_APP_DIR"] = "RNODataViewer.base.app"
 server = Flask(os.getenv("FLASK_APP_DIR") or __name__, static_folder='static')
 #print(server)
-from NuRadioReco.eventbrowser.app import *
+# from NuRadioReco.eventbrowser.app import *
 
 #app._favicon = ("./favicon.ico")
 #app = NuRadioReco.eventbrowser.app
-#app = dash.Dash(server=server)
+app = dash.Dash(server=server, use_pages=True, pages_folder='../')
 #app.config.suppress_callback_exceptions = True

@@ -3,11 +3,9 @@
 import argparse
 import logging
 logging.basicConfig(format="%(levelname)s:%(asctime)s:%(name)s:%(message)s", datefmt="%H:%M:%S")
-
 import dash
 from dash.dependencies import Input, Output, State
-from dash import html
-from dash import dcc
+from dash import html, dcc, callback, callback_context
 from dash.exceptions import PreventUpdate
 import webbrowser
 import subprocess
@@ -17,9 +15,9 @@ app.config.suppress_callback_exceptions = True
 import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.data_provider_nur
 
-from tabs import rnog_overview
-from tabs import run_viewer
-from tabs import event_viewer
+# from tabs import rnog_overview
+# from tabs import run_viewer
+# from tabs import event_viewer
 
 
 #TODO: need for updating run_table with hidden div? eg. dcc.Interval or other solution?
@@ -94,15 +92,21 @@ app.layout = html.Div([
     # three tabs, using this method, fresh pages get loaded after switching tabs
     dcc.Tabs(
             [
-                dcc.Tab(label= 'Overview', value= 'overview_tab', id='overview_tab_button'),
-                dcc.Tab(label= 'Run Browser', value= 'runbrowser_tab', id='runbrowser_tab_button'),
-                dcc.Tab(label= 'Event Browser', value= 'eventbrowser_tab'),
+                dcc.Tab(label= 'Overview', value= '/', id='overview_tab_button'),
+                dcc.Tab(label= 'Run Browser', value= '/runViewer', id='runbrowser_tab_button'),
+                dcc.Tab(label= 'Event Browser', value= '/eventViewer'),
                 # dcc.Tab(label='?!', value='debug_menu', style={'maxwidth':'20px'}),
             ],
             value='overview_tab', # start at general overview page by default
             id='tab-selection'
         ),
-    html.Div(id='active-monitoring-tab'),
+    # html.Div(id='active-monitoring-tab'),
+    # ### use hidden links to make the tab buttons work with pages - hacky?
+    # dcc.Link(id='link-home', href='/', style={'display':'none'}),
+    # dcc.Link(id='link-run', href='/runViewer', style={'display':'none'}),
+    # dcc.Link(id='link-event', href='/eventViewer', style={'display':'none'}),
+    dash.page_container,
+    dcc.Location(id='url', refresh='callback-nav'),
     dcc.Interval(id='self-updater', interval=300000), # to update the run table
     dcc.Interval(id='debug-log-updater', interval=3600000), # not used by default
     html.Div([
@@ -132,17 +136,33 @@ app.layout = html.Div([
     #])
 ])
 
-@app.callback(Output('active-monitoring-tab', 'children'),
-              [Input('tab-selection', 'value')])
-def render_content(tab):
-    if tab == 'overview_tab':
-        return rnog_overview.overview_layout
-    elif tab == 'runbrowser_tab':
-        return run_viewer.run_viewer_layout
-    elif tab == 'eventbrowser_tab':
-        return event_viewer.event_viewer_layout
+@callback(
+        [Output('url', 'pathname'),
+         Output('tab-selection', 'value')],
+        [Input('tab-selection', 'value'), Input('url', 'pathname')],
+        prevent_initial_call=True
+)
+def tab_selection(tab, pathname):
+    triggering_component = callback_context.triggered[0]['prop_id'].split('.')[0]
+    logger.warning(f'current tab: {tab} / current pathname: {pathname} / trigger: {triggering_component}')
 
-@app.callback(Output('version-info', 'children'),
+    if triggering_component == 'url':
+        return pathname, pathname # set from url
+    else:
+        return tab, tab
+    
+
+# @callback(Output('active-monitoring-tab', 'children'),
+#               [Input('tab-selection', 'value')])
+# def render_content(tab):
+#     if tab == 'overview_tab':
+#         return rnog_overview.overview_layout
+#     elif tab == 'runbrowser_tab':
+#         return run_viewer.run_viewer_layout
+#     elif tab == 'eventbrowser_tab':
+#         return event_viewer.event_viewer_layout
+
+@callback(Output('version-info', 'children'),
               [Input('self-updater', 'n_intervals')])
 def update_version_info(n_intervals):
     # get current versions:
@@ -150,6 +170,7 @@ def update_version_info(n_intervals):
     # check for updated version on remote
     subprocess.call(['git', '-C', os.path.dirname(__file__), 'fetch', 'origin', '+refs/heads/feature/monitoring:refs/remotes/origin/feature/monitoring']) #TODO - change this to 'master'
     dataviewer_current_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'origin/feature/monitoring']).decode()
+
     from NuRadioMC import __path__ as nuradiomc_path
     nuradiomc_version = subprocess.check_output(['git', '-C', nuradiomc_path[0], 'rev-parse', '--short', 'HEAD']).decode()
     subprocess.call(['git', '-C', nuradiomc_path[0], 'fetch', 'origin', '+refs/heads/rnog_eventbrowser:refs/remotes/origin/rnog_eventbrowser'])
@@ -178,7 +199,7 @@ def update_version_info(n_intervals):
     ]
     return version_info_table
 
-@app.callback(
+@callback(
     [Output('show-debug-output', 'children'),
      Output('debug-output', 'style'),
      Output('debug-log-updater', 'interval')],
@@ -198,7 +219,7 @@ def show_debug_output(n_clicks, debug_style, current_value):
 
     return [button_label, debug_style, log_update_interval]
 
-@app.callback(
+@callback(
         Output('logger-output', 'srcDoc'),
         [Input('debug-log-updater', 'n_intervals'),
          Input('show-debug-output', 'children')]

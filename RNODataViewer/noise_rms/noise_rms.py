@@ -1,7 +1,7 @@
 import numpy as np
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -41,7 +41,7 @@ def do_click(trace, points, state):
     webbrowser.open_new_tab(url)
     print("click")
 
-@app.callback(
+@callback(
     Output('noise-rms-plot', 'figure'),
     [Input('noise-rms-reload-button', 'n_clicks')],
     [State('station-id-dropdown-single', 'value'),
@@ -91,7 +91,7 @@ def update_noise_rms_plot(n_clicks, station_id, channel_ids, file_names):
     fig.update_xaxes(nticks=10)
     return fig
 
-@app.callback(
+@callback(
     [Output('noise-rms-plot-container', 'style'),
      Output('noise-rms-showhide','children')],
     [Input('noise-rms-reload-button', 'n_clicks'),

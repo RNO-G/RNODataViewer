@@ -1,8 +1,8 @@
 import numpy as np
 import itertools
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -98,7 +98,7 @@ def get_updated_trigger_table(station_id):
         df["time_unix"] = df.index
     return df
 
-@app.callback(
+@callback(
     Output('triggeruproot-plot', 'figure'),
     [Input('triggeruproot-reload-button', 'n_clicks'),
      Input('trigger-rate-zoom-level', 'value'),],
@@ -248,7 +248,7 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
     fig.update_yaxes(rangemode='tozero')
     return fig
 
-@app.callback(
+@callback(
     [Output('triggeruproot-plot-container', 'style'),
      Output('triggeruproot-showhide','children')],
     [Input('triggeruproot-reload-button', 'n_clicks'),
