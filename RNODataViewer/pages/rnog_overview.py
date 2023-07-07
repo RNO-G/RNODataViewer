@@ -9,7 +9,7 @@ import astropy.time
 import datetime
 
 import dash
-from dash import html, dcc, callback, dcc, callback
+from dash import html, dcc, callback
 # from dash import dcc
 # from dash import callback_context
 from dash.exceptions import PreventUpdate
@@ -134,7 +134,7 @@ def update_current_date(n_intervals, max_date):
      dash.dependencies.Input('time-selector-start-time', 'value'),
      dash.dependencies.Input('time-selector-end-date', 'date'),
      dash.dependencies.Input('time-selector-end-time', 'value'),
-     dash.dependencies.Input('station-id-dropdown', 'value')])
+     dash.dependencies.Input('overview-station-id-dropdown', 'value')])
 def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21,22]):
     try:
         t_start = astropy.time.Time(start_date) + astropy.time.TimeDelta(start_time, format='sec')

@@ -28,7 +28,7 @@ layout = html.Div([
 @callback(
     Output('file-list-display', 'children'),
     [Input('file-list-reload-button', 'n_clicks')],
-    [State('station-id-dropdown', 'value')]
+    [State('overview-station-id-dropdown', 'value')]
 )
 def update_file_list(n_clicks, station_ids):
     data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()

@@ -106,7 +106,7 @@ def get_updated_trigger_table(station_id):
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('station-id-dropdown', 'value'),
+     State('overview-station-id-dropdown', 'value'),
      State('trigger-rate-which-triggers', 'value')],
     prevent_initial_call=True
 )

@@ -9,8 +9,10 @@ from dash import html, dcc, callback, callback_context
 from dash.exceptions import PreventUpdate
 import webbrowser
 import subprocess
+import json
+import uuid
 from RNODataViewer.base.app import app
-app.config.suppress_callback_exceptions = True
+# app.config.suppress_callback_exceptions = True
 
 import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.data_provider_nur
@@ -43,6 +45,7 @@ class DashLoggerHandler(logging.StreamHandler):
 
 
 logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 if not any([isinstance(handler, DashLoggerHandler) for handler in logger.handlers]):
     dashLoggerHandler = DashLoggerHandler()
     logger.addHandler(dashLoggerHandler)
@@ -71,7 +74,7 @@ if parsed_args.reverse_proxy_path is not None:
     file_prefix = parsed_args.reverse_proxy_path
 
 
-logging.info("Starting the monitoring application")
+logger.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
 filenames_root = run_table.get_table().filenames_root.values
@@ -107,6 +110,7 @@ app.layout = html.Div([
     # dcc.Link(id='link-event', href='/eventViewer', style={'display':'none'}),
     dash.page_container,
     dcc.Location(id='url', refresh='callback-nav'),
+    html.Div(id='user_id', style={'display': 'none'}, children=json.dumps(None)), # is this needed to allow multiple users/instances?
     dcc.Interval(id='self-updater', interval=300000), # to update the run table
     dcc.Interval(id='debug-log-updater', interval=3600000), # not used by default
     html.Div([
@@ -136,6 +140,17 @@ app.layout = html.Div([
     #])
 ])
 
+@callback(Output('user_id', 'children'),
+              [Input('url', 'id')], # this should never trigger, we just want to do this whenever a new connection is opened (?)
+              [State('user_id', 'children')])
+def set_uuid(pathname, juser_id):
+    user_id = json.loads(juser_id)
+    if user_id is None:
+        logger.debug("Generating new unique user id...")
+        user_id = uuid.uuid4().hex
+    return json.dumps(user_id)
+
+
 @callback(
         [Output('url', 'pathname'),
          Output('tab-selection', 'value')],
@@ -144,7 +159,7 @@ app.layout = html.Div([
 )
 def tab_selection(tab, pathname):
     triggering_component = callback_context.triggered[0]['prop_id'].split('.')[0]
-    logger.warning(f'current tab: {tab} / current pathname: {pathname} / trigger: {triggering_component}')
+    logger.debug(f'current tab: {tab} / current pathname: {pathname} / trigger: {triggering_component}')
 
     if triggering_component == 'url':
         return pathname, pathname # set from url
@@ -166,10 +181,11 @@ def tab_selection(tab, pathname):
               [Input('self-updater', 'n_intervals')])
 def update_version_info(n_intervals):
     # get current versions:
-    dataviewer_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'HEAD']).decode()
-    # check for updated version on remote
-    subprocess.call(['git', '-C', os.path.dirname(__file__), 'fetch', 'origin', '+refs/heads/feature/monitoring:refs/remotes/origin/feature/monitoring']) #TODO - change this to 'master'
-    dataviewer_current_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'origin/feature/monitoring']).decode()
+    # dataviewer_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'HEAD']).decode()
+    # # check for updated version on remote
+    # subprocess.call(['git', '-C', os.path.dirname(__file__), 'fetch', 'origin', '+refs/heads/feature/monitoring:refs/remotes/origin/feature/monitoring']) #TODO - change this to 'master'
+    # dataviewer_current_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'origin/feature/monitoring']).decode()
+    deployment_date = time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time()))
 
     from NuRadioMC import __path__ as nuradiomc_path
     nuradiomc_version = subprocess.check_output(['git', '-C', nuradiomc_path[0], 'rev-parse', '--short', 'HEAD']).decode()
@@ -181,17 +197,17 @@ def update_version_info(n_intervals):
         run_table.update_run_table()
         run_table_last_update = run_table.last_modification_date
 
-    if dataviewer_version == dataviewer_current_version:
-        dataviewer_string = 'Up to date'
-    else:
-        dataviewer_string = f'latest: {dataviewer_current_version}'
+    # if dataviewer_version == dataviewer_current_version:
+    #     dataviewer_string = 'Up to date'
+    # else:
+    #     dataviewer_string = f'latest: {dataviewer_current_version}'
     if nuradiomc_version == nuradiomc_current_version:
         nuradiomc_string = 'Up to date'
     else:
         nuradiomc_string = f'latest: {nuradiomc_current_version}'
 
     version_info_table = [
-        f'RNODataViewer version: {dataviewer_version} ({dataviewer_string})',
+        f'Deployed: {deployment_date} (UTC)',
         html.Br(),
         f'NuRadioMC version: {nuradiomc_version} ({nuradiomc_string})',
         html.Br(),

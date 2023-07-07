@@ -4,7 +4,7 @@ import NuRadioReco.eventbrowser.apps.trace_plots.channel_time_trace
 import NuRadioReco.eventbrowser.apps.trace_plots.channel_spectrum
 import NuRadioReco.eventbrowser.apps.trace_plots.multi_channel_plot
 from dash.dependencies import State, Input, Output
-from NuRadioReco.eventbrowser.app import app
+# from NuRadioReco.eventbrowser.app import app
 import logging
 
 logger = logging.getLogger('traces')
@@ -42,7 +42,7 @@ layout = html.Div([
     Output('toggle_channel_traces', 'children')],
     [Input('toggle_channel_traces', 'n_clicks')],
     State('toggle_channel_traces', 'children'),
-    prevent_initial_callbacks=True
+    prevent_initial_call=True
 )
 def toggle_channel_trace_plot(button_clicks, showhide):
     if showhide == 'Hide':
@@ -55,7 +55,7 @@ def toggle_channel_trace_plot(button_clicks, showhide):
     Output('toggle_channel_spectrum', 'children')],
     [Input('toggle_channel_spectrum', 'n_clicks')],
     State('toggle_channel_spectrum', 'children'),
-    prevent_initial_callbacks=True
+    prevent_initial_call=True
 )
 def toggle_channel_spectrum_plot(button_clicks, showhide):
     if showhide == 'Hide':

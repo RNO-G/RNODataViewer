@@ -55,7 +55,7 @@ layout = html.Div([
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('station-id-dropdown', 'value')]
+     State('overview-station-id-dropdown', 'value')]
 )
 def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_time, station_ids):
     t_start = Time(start_date) + TimeDelta(start_time, format='sec')

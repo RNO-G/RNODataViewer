@@ -4,7 +4,11 @@ from NuRadioReco.modules.io.RNO_G.readRNOGDataMattak import readRNOGData
 import uproot
 import numpy as np
 import os
+import time
+import logging
 
+
+logger = logging.getLogger('RNODataViewer')
 trigger_names = ["RADIANT0", "RADIANT1", "RADIANTX", "LT", "FORCE", "PPS", "UNKNOWN"]
 
 @six.add_metaclass(NuRadioReco.utilities.metaclasses.Singleton)
@@ -17,12 +21,16 @@ class RNODataProviderRoot:
         self.uproot_iterator_header = None
 
     def set_filenames(self, filenames):
+        if isinstance(filenames, str):
+            filenames = [filenames]
         if len(filenames) > 0:
-            self.__filenames = filenames
-            # self.__event_io = readRNOGData()
-            # mattak for now can only read directories
-            self.__event_io.begin([os.path.dirname(f) for f in filenames])
-            #self.__event_io.run(channels=self.__channels)
+            if filenames is not self.__filenames:
+                logger.info(f'Opening new file(s): {filenames}')
+                self.__filenames = filenames
+                # self.__event_io = readRNOGData()
+                # mattak for now can only read directories
+                self.__event_io.begin([os.path.dirname(f) for f in filenames])
+                #self.__event_io.run(channels=self.__channels)
 
     def set_iterators(self, cut=None):
         self.__event_io.begin(self.__filenames)
@@ -42,9 +50,15 @@ class RNODataProviderRoot:
         return None
 
     def get_n_events(self):
-        return self.__event_io.get_n_events()
+        return self.__event_io._n_events_total#get_n_events()
+    
+    def get_event(self, id):
+        return self.__event_io.get_event(id[0], id[1])
+    
+    def get_event_i(self, i):
+        return self.__event_io.get_event_by_index(i)
 
-    def get_waveforms(self, station_id, channels):
+    def get_waveforms(self, station_id, channels): ### DEPRECATED
         # for evt in self.__event_io.run():
         #     evt.get_station(station_id)
         waveform_array = []
@@ -70,7 +84,7 @@ class RNODataProviderRoot:
             readout_times = np.append(readout_times, file['header']['readout_time'].array(library='np'))
         return readout_times[station_ids == station_id]
 
-    def get_event_times_hdr(self, station_id):
+    def get_event_times_hdr(self, station_id): ### DEPRECATED
         station_ids = np.array([], dtype=int)
         readout_times = np.array([], dtype=float)
         for filename in self.__filenames:
@@ -111,5 +125,29 @@ class RNODataProviderRoot:
         einfo = self.__event_io.get_events_information(['station', 'triggerType'])
         return [i['triggerType'] for i in einfo.values() if i['station'] == station_id]
 
+### we create a separate datareader for each tab and each user
+@six.add_metaclass(NuRadioReco.utilities.metaclasses.Singleton)
+class DataProvider:
+
+    def __init__(self):
+        self.__user_instances = {}
+    
+    def get_file_handler(self, user_id, filenames, channels=None):
+        if user_id not in self.__user_instances.keys(): # create new instance
+            
+            
+            data_provider = RNODataProviderRoot(create_new=True)
+            
+            self.__user_instances[user_id] = dict(
+                data_provider=data_provider, last_access=None
+            )
+        else:
+            data_provider = self.__user_instances[user_id]['data_provider']
+        data_provider.set_filenames(filenames)
+        
+        self.__user_instances[user_id]['last_access'] = time.time()
+        return data_provider
+    
 data_provider = RNODataProviderRoot()
 data_provider_run = RNODataProviderRoot(create_new=True)
+data_provider_event = DataProvider() #RNODataProviderRoot(create_new=True)

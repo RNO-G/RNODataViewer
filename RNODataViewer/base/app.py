@@ -10,5 +10,5 @@ server = Flask(os.getenv("FLASK_APP_DIR") or __name__, static_folder='static')
 
 #app._favicon = ("./favicon.ico")
 #app = NuRadioReco.eventbrowser.app
-app = dash.Dash(server=server, use_pages=True, pages_folder='../')
+app = dash.Dash(server=server, use_pages=True, pages_folder='../', suppress_callback_exceptions=True)
 #app.config.suppress_callback_exceptions = True

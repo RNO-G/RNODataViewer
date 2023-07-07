@@ -87,15 +87,15 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
         shared_yaxes='all',
         vertical_spacing=0.2 / n_rows
     )
-    times_iso = np.repeat(astropy.time.Time(times).iso, len(spectra[0][0])).reshape(len(labels),len(spectra[0][0])).T
+    times_iso = np.repeat(astropy.time.Time(times).iso, len(spectra[channel_ids[0]][0])).reshape(len(labels),len(spectra[channel_ids[0]][0])).T
     plot_times = np.arange(0, len(times))
-    xtitles = np.repeat(labels, len(spectra[0][0])).reshape(len(labels),len(spectra[0][0])).T
+    xtitles = np.repeat(labels, len(spectra[channel_ids[0]][0])).reshape(len(labels),len(spectra[channel_ids[0]][0])).T
     for i_channel, channel_id in enumerate(channel_ids):
         i_row = i_channel // 4 + 1
         i_col = i_channel % 4 + 1
         fig.add_trace(
             go.Heatmap(
-                z=np.abs(spectra[i_channel].T) / units.mV,
+                z=np.abs(spectra[channel_id].T) / units.mV,
                 x=plot_times,
                 y0=0.0,
                 dy=d_f / units.MHz,

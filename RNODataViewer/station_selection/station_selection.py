@@ -11,7 +11,7 @@ layout = html.Div([
     html.Div('Station ID', className='option-label'),
         html.Div([
             dcc.Dropdown(
-                id='station-id-dropdown',
+                id='overview-station-id-dropdown',
                 options=station_entries,
                 value=[k['value'] for k in station_entries],
                 persistence=True,
