@@ -181,16 +181,16 @@ def tab_selection(tab, pathname):
               [Input('self-updater', 'n_intervals')])
 def update_version_info(n_intervals):
     # get current versions:
-    # dataviewer_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'HEAD']).decode()
+    dataviewer_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'HEAD']).decode()
     # # check for updated version on remote
     # subprocess.call(['git', '-C', os.path.dirname(__file__), 'fetch', 'origin', '+refs/heads/feature/monitoring:refs/remotes/origin/feature/monitoring']) #TODO - change this to 'master'
     # dataviewer_current_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'origin/feature/monitoring']).decode()
     deployment_date = time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time()))
 
     from NuRadioMC import __path__ as nuradiomc_path
-    nuradiomc_version = subprocess.check_output(['git', '-C', nuradiomc_path[0], 'rev-parse', '--short', 'HEAD']).decode()
+    nuradiomc_version = subprocess.check_output(['git', '-C', os.path.dirname(nuradiomc_path[0]), 'rev-parse', '--short', 'HEAD']).decode()
     subprocess.call(['git', '-C', nuradiomc_path[0], 'fetch', 'origin', '+refs/heads/rnog_eventbrowser:refs/remotes/origin/rnog_eventbrowser'])
-    nuradiomc_current_version = subprocess.check_output(['git', '-C', nuradiomc_path[0], 'rev-parse', '--short', 'origin/rnog_eventbrowser']).decode()
+    nuradiomc_current_version = subprocess.check_output(['git', '-C', os.path.dirname(nuradiomc_path[0]), 'rev-parse', '--short', 'origin/rnog_eventbrowser']).decode()
     run_table_last_update = run_table.last_modification_date
     time_since_update = astropy.time.Time(time.time(), format='unix') - run_table_last_update
     if time_since_update.sec > 600:
@@ -207,7 +207,7 @@ def update_version_info(n_intervals):
         nuradiomc_string = f'latest: {nuradiomc_current_version}'
 
     version_info_table = [
-        f'Deployed: {deployment_date} (UTC)',
+        f'Deployed: {deployment_date} (UTC) (version {dataviewer_version})',
         html.Br(),
         f'NuRadioMC version: {nuradiomc_version} ({nuradiomc_string})',
         html.Br(),

@@ -23,26 +23,32 @@ SHELL ["/bin/bash", "-c"]
 RUN strings /lib/x86_64-linux-gnu/libc.so.6 | grep GLIBC && echo '---' && strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBC && \
     echo ${LD_LIBRARY_PATH} && source root/bin/thisroot.sh && ls && cd /usr/local/lib/python3.10/site-packages/mattak && ls && make && make install && cd ..
 
-# RUN apt-get install -y python3.10
 RUN apt-get install -y pip
+
 # install additional dependencies not covered by the installation script (yet)
 RUN pip install tables waitress pandas
+
 # adding RNODataViewer to PYTHONPATH is unnecessary because we live in that directory
-ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC:/usr/local/lib/python3.10/site-packages/mattak/py:/usr/local/lib/python3.10/site-packages/RNODataViewer
+ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC:/usr/local/lib/python3.10/site-packages/mattak/py:/usr/local/lib/python3.10/site-packages/RNODataViewer:/usr/local/lib/python3.10/site-packages/rnog-runtable
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 # Install RNODataViewer
-ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer/RNODataViewer
+ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
+ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
+
 # update NuRadioMC (saves some time when rebuilding docker image)
 RUN cd NuRadioMC && git pull && cd ..
-RUN python3 /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --dev RNO_G_DATA --no-interactive
+RUN python3 /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
+
+RUN git -C /usr/local/lib/python3.10/site-packages/NuRadioMC rev-parse --short HEAD
 
 RUN useradd nuradio
-# give user write permission to RNODataViewer data folder
-# RUN chown -R nuradio /usr/local/lib/python3.10/site-packages/RNODataViewer/data
+# we give nuradio ownership of NuRadioMC and RNODataViewer to make git version checking work
+RUN chown -R nuradio /usr/local/lib/python3.10/site-packages/RNODataViewer
+RUN chown -R nuradio /usr/local/lib/python3.10/site-packages/NuRadioMC
 
 USER nuradio
 EXPOSE 8049
 WORKDIR /usr/local/lib/python3.10/site-packages/RNODataViewer/
-#CMD [ "python", "./monitoring.py","--port 8049", "--open-window"] #not sure this will pick up PYTHONPATH variable
+
 CMD python3 RNODataViewer/monitoring.py --port 8049 --waitress

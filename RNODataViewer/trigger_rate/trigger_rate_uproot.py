@@ -155,8 +155,8 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
         for i in range(len(run_values)):
             runs[mask[i]] += f'{int(run_values[i])},'
         runs[np.where(runs=='')] = 'None'
-        np.save(f'{station_id}_runs', runs)
-        np.save(f'{station_id}_times', bins)
+        # np.save(f'{station_id}_runs', runs) # debugging
+        # np.save(f'{station_id}_times', bins)
         # bins = []
         # runs = []
         # for i in run_table_cut.index:
