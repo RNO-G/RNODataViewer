@@ -22,8 +22,11 @@ logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
 logger.setLevel(logging.DEBUG)
 
-RUN_TABLE = run_table.get_table() # may have to double check this doesn't break automatic updating?
-trigger_names = ['all', 'rf', 'force', 'pps', 'ext', 'radiant', 'lt', 'RF0', 'RF1', 'RF-1']
+trigger_names = ['ALL', 'RADIANT0','RADIANT1', 'RADIANTX', 'LT', 'FORCE', 'PPS']
+
+# line styles for plot
+trigger_line_styles = ['solid'] + 4 * ['dash', 'dot', 'dashdot', 'longdash', 'longdashdot']
+trigger_line_styles = {i:j for i,j in zip(trigger_names, trigger_line_styles)}
 
 layout = html.Div([
     html.Div([
@@ -52,51 +55,87 @@ layout = html.Div([
                 id='trigger-rate-which-triggers',
                 clearable=True, multi=True,
                 options=[{'label':i, 'value':i} for i in trigger_names],
-                value=['all', 'force', 'radiant', 'lt'], style={'display':'inline-flex', 'min-width':100}),
+                value=['ALL',], style={'display':'inline-flex', 'min-width':100}),
             dcc.Graph(id='triggeruproot-plot')
         ], className='panel panel-body',id='triggeruproot-plot-container', style={'display':'none'})
     ], className='panel panel-default')
 ])
 
+class trigger_rates:
 
-def get_updated_trigger_table(station_id):
-    """
-    Download updated trigger rate table
+    def __init__(self, table_path='/tmp/RNODataViewer/data/trigger_rates'):
+        self.table_dir_local = table_path
+        self.hash_table_path_local = os.path.join(table_path, 'trigger_rate_hash_table.hdf5')
+        self.hash_table_path_url = 'https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rate_hash_table.hdf5'
+        self.last_update = Time('1970-01-01')
+        if os.path.exists(self.hash_table_path_local):
+            self.hash_table = pd.read_hdf(self.hash_table_path_local)
+        else:
+            self.hash_table = None
 
-    Loads the trigger rate table, and checks if it is up to date using the
-    run table. If not, download a (hopefully) updated copy from the Desy server.
+    def get_updated_trigger_table(self, start_time, end_time):
+        """
+        Returns a DataFrame with the trigger rates
+        """
+        now = Time.now()
+        if (now - self.last_update).sec > 300: # update trigger rate tables
+            logger.warning("Updating trigger rate tables...")
+            try:
+                df_bytes = requests.get(self.hash_table_path_url)
+                df_bytes.raise_for_status()
+                with open(self.hash_table_path_local, 'wb') as f:
+                    f.write(df_bytes.content)
+            except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+                logger.error(msg="Failed to update trigger rate tables, will try to use local versions instead...", exc_info=e)
+            
+            hash_table = pd.read_hdf(self.hash_table_path_local)
+            if self.hash_table is None:
+                update_tables = hash_table.index.levels[0] # update all tables
+            else:
+                update_tables = []
+                for i in hash_table.index.levels[0]:
+                    if i in self.hash_table.index.levels[0]:
+                        n_events_new = hash_table.loc[i, 'n_events']
+                        n_events_old = self.hash_table.loc[i, 'n_events']
+                        if len(n_events_new) == len(n_events_old):
+                            if np.all(n_events_new == n_events_old):
+                                continue # table is up to date
+                    update_tables.append(i)
+            
+            if len(update_tables):
+                times = Time([f'{month}-01' for month in update_tables])
+                mask = (times >= start_time) & (times <= end_time)
+                update_tables = np.array(update_tables)[mask]
 
-    """
-    table_path = os.path.join(
-        #os.path.dirname(os.path.dirname(__file__)),
-        '/tmp/RNODataViewer/',
-        f'data/trigger_rates/trigger_rates_s{station_id}.hdf5'
-    )
-    try: # first, we check if the table is available locally
-        df = pd.read_hdf(table_path)
-        df["time_unix"] = df.index
-        time_last_event = Time(run_table.get_table().query('station==@station_id').time_end.max()).unix
-        if time_last_event - np.max(df.time_unix) > 1800:
-            logger.debug(
-                f'Updating trigger rate table for station {station_id}:\n'
-                + f'Most recent event: {Time(time_last_event, format="unix").iso}\n'
-                + f'Latest event in table: {Time(np.max(df.time_unix), format="unix").iso}')
-            raise FileNotFoundError(f"Trigger rate table for station {station_id} is out of date, updating...") # this is hacky!
-    except FileNotFoundError: # no file found, or update required
-        if not os.path.exists(os.path.dirname(table_path)):
-            os.makedirs(os.path.dirname(table_path))
-        table_path_https = f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5"
-        try:
-            df_bytes = requests.get(table_path_https)
-        except requests.exceptions.ConnectionError:
-            logger.warning("Failed to update trigger rate tables, using local version instead...")
-            return df
-        with open(table_path, 'wb') as file:
-            file.write(df_bytes.content)
+                for table in update_tables:
+                    logger.warning(f"Downloading updated trigger rate table {table}")
+                    try:
+                        df_bytes = requests.get(f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_{table}.hdf5")
+                        df_bytes.raise_for_status()
+                        with open(os.path.join(self.table_dir_local, f"trigger_rates_{table}.hdf5"), 'wb') as f:
+                            f.write(df_bytes.content)
+                    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+                        logger.error(msg=f"Unable to update trigger table {table}", exc_info=e)
+            
+            self.hash_table = hash_table
 
-        df = pd.read_hdf(table_path)
-        df["time_unix"] = df.index
-    return df
+        tables = self.hash_table.index.levels[0]
+        times = Time([f'{month}-01' for month in tables])
+        mask = (times >= start_time) & (times <= end_time)
+        tables = tables[mask]
+        trigger_rate_tables = [
+            pd.read_hdf(os.path.join(self.table_dir_local, f"trigger_rates_{table}.hdf5"))
+            for table in tables]
+        if not len(trigger_rate_tables):
+            logger.warning('No trigger rate tables for selected period!')
+            return None
+        
+        trigger_table = pd.concat(trigger_rate_tables)
+        
+        return trigger_table
+      
+TriggerRateTable = trigger_rates()
+
 
 @callback(
     Output('triggeruproot-plot', 'figure'),
@@ -113,8 +152,8 @@ def get_updated_trigger_table(station_id):
 def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids, trigger_keys):
     t_start = (Time(start_date) + TimeDelta(start_time, format='sec')).datetime
     t_end = (Time(end_date) + TimeDelta(end_time, format='sec')).datetime
-    t_start_unix = Time(t_start).unix
-    t_end_unix = Time(t_end).unix
+    t_start_unix = Time(t_start).unix // 60 * 60
+    t_end_unix = (Time(t_end).unix // 60 + 1) * 60
 
     binwidth_sec = binwidth_min * 60
 
@@ -123,30 +162,31 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
 
     plots = []
 
-    trigger_line_styles = {
-            'rf_trigger': 'dash',
-            'force_trigger': 'longdash',
-            'pps_trigger': 'longdash',
-            'ext_trigger': 'longdashdot',
-            'radiant_trigger': 'dashdot',
-            'RF0_trigger': 'dashdot',
-            'RF1_trigger': 'dashdot',
-            'RF-1_trigger': 'dashdot',
-            'lt_trigger': 'dot',
-            'all': 'solid'
-            }
+    # trigger_line_styles = {
+    #         'rf_trigger': 'dash',
+    #         'force_trigger': 'longdash',
+    #         'pps_trigger': 'longdash',
+    #         'ext_trigger': 'longdashdot',
+    #         'radiant_trigger': 'dashdot',
+    #         'RF0_trigger': 'dashdot',
+    #         'RF1_trigger': 'dashdot',
+    #         'RF-1_trigger': 'dashdot',
+    #         'lt_trigger': 'dot',
+    #         'all': 'solid'
+    #         }
 
+    df = TriggerRateTable.get_updated_trigger_table(t_start, t_end)
+    if df is None: # no trigger rate tables found
+        return RNODataViewer.base.error_message.get_error_message("No trigger rate tables found")
+    df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
+    bins = np.arange(t_start_unix, t_end_unix + binwidth_sec + 1, binwidth_sec)
+    runtable = run_table.get_table().query("time_end>@t_start&time_start<@t_end")
     for station_id in station_ids:
-        logger.debug(f"Getting trigger table for station {station_id}...")
-        df = get_updated_trigger_table(station_id)
-        df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
-        run_table_cut = RUN_TABLE.query(
-            'station==@station_id&time_end>@t_start&time_start<@t_end'
-        ).sort_values(by='time_start')
-        if len(run_table_cut) == 0:
+        if station_id not in df.index.levels[0]:
+            logger.info(f"No trigger rates for station {station_id} in current time selection, skipping...")
             continue
-        logger.debug("Making bins...")
-        bins = np.arange(Time(run_table_cut.time_start.min()).unix, Time(run_table_cut.time_end.max()).unix + binwidth_sec, binwidth_sec)
+        logger.debug(f"Getting trigger table for station {station_id}...")
+        run_table_cut = runtable.query('station==@station_id')
         runs = np.array((len(bins)-1) * ['',], dtype=object)
         run_start_times = Time(run_table_cut.time_start).unix
         run_end_times = Time(run_table_cut.time_end).unix
@@ -189,16 +229,17 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
         bin_widths = bins[1:] - bins[:-1]
 
         logger.debug("Binning trigger rates...")
+        trigger_df = df.loc[station_id]
         for key in trigger_keys:
-            if key=="all":
+            if key=="ALL":
                 visible = True
                 line_dict = dict(width=2)
                 mode = 'lines+markers'
             else:
                 visible= True #'legendonly'
-                line_dict = dict(dash=trigger_line_styles[f'{key}_trigger'])
+                line_dict = dict(dash=trigger_line_styles[key])
                 mode = 'lines'
-            counts, _ = np.histogram(df.index.values, bins=bins, weights=df.loc[:,key])
+            counts, _ = np.histogram(trigger_df.index.get_level_values(1), bins=bins, weights=trigger_df.loc[:,key])
             y = counts / bin_widths
             assert len(runs) == len(y)
             # mask = np.ones_like(y).astype(bool)
@@ -227,21 +268,21 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
             direction="left",
             buttons=list([
                 dict(
+                    args=[{'yaxis.type': 'log'}],
+                    label="Log",
+                    method="relayout"
+                ),
+                dict(
                     args=[{'yaxis.type': 'linear'}],
                     label="Linear",
                     method="relayout"
                 ),
-                dict(
-                    args=[{'yaxis.type': 'log'}],
-                    label="Log",
-                    method="relayout"
-                )
             ])
         ),
     ]
     fig.update_layout(
           xaxis={'title': 'date'},
-          yaxis={'title': 'Rate [Hz]'},
+          yaxis={'title': 'Rate [Hz]','type':'log'},
           updatemenus=updatemenus,
           uirevision=True
       )
