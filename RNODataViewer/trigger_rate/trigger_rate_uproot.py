@@ -118,6 +118,7 @@ class trigger_rates:
                         logger.error(msg=f"Unable to update trigger table {table}", exc_info=e)
             
             self.hash_table = hash_table
+            self.last_update = now
 
         tables = self.hash_table.index.levels[0]
         times = Time([f'{month}-01' for month in tables])
