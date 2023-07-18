@@ -29,7 +29,9 @@ class RNODataProviderRoot:
                 self.__filenames = filenames
                 # self.__event_io = readRNOGData()
                 # mattak for now can only read directories
-                self.__event_io.begin([os.path.dirname(f) for f in filenames])
+                self.__event_io.begin(
+                    [os.path.dirname(f) for f in filenames],
+                    overwrite_sampling_rate=3.2) #TODO - remove hardcoded sampling rate
                 #self.__event_io.run(channels=self.__channels)
 
     def set_iterators(self, cut=None):
