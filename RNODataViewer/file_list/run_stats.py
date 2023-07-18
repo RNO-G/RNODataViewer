@@ -22,21 +22,29 @@ class RunStats:
         run_table = self.add_paths_to_run_table(run_table, top_level_dir)
         self.run_table = self.filter_available_runs(run_table)
         self.last_modification_date = astropy.time.Time.now()
+        self.last_full_update = astropy.time.Time.now()
 
     def update_run_table(self):
         # check the date on the webpage and see if it is newer than what was loaded
         current_time = astropy.time.Time.now()
         if (current_time - self.last_modification_date).sec < 60:
             return None # no need to update more than once a minute
-        logger.debug("Checking for updated run table...")
-        if current_time > self.last_modification_date:
-            update_table = self.run_table_class.get_table(start_time=self.last_modification_date)
+        elif (current_time - self.last_full_update).sec > 86400: # once per day, reload the complete table (slow)
+            logger.debug("Reloading run table")
+            run_table = self.run_table_class.get_table()
+            run_table = self.add_paths_to_run_table(run_table, self.__data_dir)
+            self.run_table = self.filter_available_runs(run_table)
+            self.last_full_update = current_time
+        else: # we only update the most recent 24 hours (quicker)
+            logger.debug("Checking for updated run table...")
+            update_table = self.run_table_class.get_table( 
+                start_time=self.last_modification_date-astropy.time.TimeDelta(1, format='jd')
+            )
             if len(update_table):
                 update_table = self.add_paths_to_run_table(update_table, self.__data_dir)
                 update_table = self.filter_available_runs(update_table)
-                self.run_table.update(update_table)
-            logger.info(f"updating runtable. Expected files: {len(self.run_table)}")
-            logger.info(f"available files: {len(self.run_table)}")
+                self.run_table = pd.concat([self.run_table, update_table], ignore_index=True).drop_duplicates(['station', 'run'], keep='last')
+        
         self.last_modification_date = astropy.time.Time.now()
 
     def add_paths_to_run_table(self, run_table, top_level_dir="."):
