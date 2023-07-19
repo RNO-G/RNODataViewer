@@ -126,13 +126,18 @@ event_viewer_layout = html.Div([
             ], className='custom-table-row'),
             html.Div([
                 html.Div('Time:', className='custom-table-td'),
-                html.Div('', className='custom-table-td-last', id='event-info-time')
+                html.Div('', className='custom-table-td-last', id='event-info-time',style={'height':'35px'})
+            ], className='custom-table-row'),
+            html.Div([
+                html.Div('Trigger:', className='custom-table-td'),
+                html.Div('', className='custom-table-td-last', id='event-info-trigger', style={'fontWeight':'bold', 'height':'35px'})
             ], className='custom-table-row')
         ], style={'flex': '1', 'min-width':280, 'max-width':400}, className='event-info-table', id='event-info-table'),
         dash.dash_table.DataTable(
-            columns=[{"name":i, "id":i} for i in ['Trigger', 'Value']],
+            columns=[{"name":i, "id":i} for i in ['Run Info', '']],
             style_header=dict(fontWeight='bold',textAlign='left'),
             style_table=dict(padding='0px 25px 0px 0px'),
+            style_cell=dict(textAlign='left'),
             style_data_conditional=[
                 {
                     'if':{'filter_query':'{Value} = "True"', 'column_id':'Value'},
@@ -140,234 +145,47 @@ event_viewer_layout = html.Div([
                     'fontWeight':'bold'
                 }
             ],
-            id='trigger-info-table')
+            id='eventviewer-run-info-table'),
     ], style={'display': 'flex'}),
     traces.layout
 ])
 
 layout = event_viewer_layout # needed for pages support
 
-# @callback(
-#     Output('content', 'children'),
-#     [Input('content-selector', 'value')]
-# )
-# def get_page_content(selection):
-#     if selection == 'traces':
-#         return [traces.layout]
-#     return []
-
-
-# @callback(
-#     Output('station-id-dropdown', 'value'),
-#     [Input('btn-previous-station', 'n_clicks'),
-#      Input('btn-next-station', 'n_clicks'),
-#      Input('url', 'hash')],
-#     [State('station-id-dropdown', 'value')]
-# )
-# def change_station_from_button(previous, next, hash, current_station_value):
-#     context = dash.callback_context
-
-#     # update triggered by url
-#     if context.triggered[0]['prop_id'] == 'url.hash':
-#         logger.debug('Triggered by URL')
-#         idx = np.array([hash.find('S'), hash.find('R')])
-#         if np.any(idx < 0): # hash doesn't completely specify location
-#             raise PreventUpdate
-#         station_id = int(hash[idx[0]+1:idx[1]])
-#         if station_id not in station_entries:
-#             raise PreventUpdate
-#         return station_id
-
-#     n_stations = len(station_entries)
-#     station_values = [i['value'] for i in station_entries]
-#     if current_station_value is None:
-#         station_value = station_values[0]
-#         return station_value
-
-#     station_value = current_station_value
-#     try:
-#         current_station_i = station_values.index(current_station_value)
-#     except ValueError:
-#         raise PreventUpdate
-#     if context.triggered[0]['prop_id'] == 'btn-previous-station.n_clicks':
-#         if current_station_i > 0:
-#             station_value = station_values[current_station_i - 1]
-#     elif context.triggered[0]['prop_id'] == 'btn-next-station.n_clicks':
-#         if current_station_i < n_stations - 1:
-#             station_value = station_values[current_station_i + 1]
-#     return station_value
-
-# @callback(
-#     Output('event-info-run-container','children'),
-#     [Input('station-id-dropdown', 'value'),
-#      Input('btn-previous-run', 'n_clicks'),
-#      Input('btn-next-run', 'n_clicks')],
-#     [State('event-info-run', 'value')]
-# )
-# def persistent_run_selection(station_id, click_previous, click_next, current_run):
-#     context = dash.callback_context
-#     if station_id == None:
-#         run_numbers = []
-#         run_options = []
-#     else:
-#         run_numbers = run_table.get_table().query('station==@station_id').run.values
-#         run_options = [{'label':i, 'value':i} for i in run_numbers]
-
-#     try:
-#         current_run_idx = list(run_numbers).index(current_run)
-#     except ValueError:
-#         current_run_idx = 0
-
-#     if context.triggered[0]['prop_id'] == 'btn-previous-run.n_clicks':
-#         if current_run_idx > 0:
-#             current_run_idx -= 1
-#     elif context.triggered[0]['prop_id'] == 'btn-next-run.n_clicks':
-#         if current_run_idx < len(run_numbers) - 1:
-#             current_run_idx += 1
-
-#     station_dropdown = dcc.Dropdown(
-#         value=run_options[current_run_idx]['value'], options=run_options,
-#         searchable=True, clearable=False,
-#         persistence=station_id, persistence_type='memory',
-#         id='event-info-run', style={'flex':1}),
-
-#     return station_dropdown
-
-# @callback(
-#     [Output('filename', 'value'),
-#     Output('event-info-id', 'options'),
-#     Output('event-counter-slider', 'max')],
-#     [Input('station-id-dropdown', 'value'),
-#     Input('event-info-run', 'value'),
-#     Input('url', 'hash')],
-#     [State('user_id', 'children')]
-# )
-# def update_event_info_id_options(station_id, run_number, hash, juser_id):
-#     context = dash.callback_context
-    
-#     # update triggered by url
-#     if context.triggered[0]['prop_id'] == 'url.hash':
-#         logger.debug('Triggered by URL')
-#         idx = np.array([hash.find('S'), hash.find('R'), hash.find('E')])
-#         if np.any(idx < 0): # hash doesn't completely specify location
-#             raise PreventUpdate
-#         station_id = int(hash[idx[0]+1:idx[1]])
-#         run_number = int(hash[idx[1]+1:idx[2]])
-#         event_id = int(hash[idx[2]+1:])
-
-#     try:
-#         filename = filename_table.loc[(station_id, run_number), 'filenames_root']
-#     except KeyError:
-#         return None, [], 0
-#     user_id = json.loads(juser_id)
-#     logger.debug(f'Getting file handler for user {user_id} and filename {filename}')
-#     nurio = browser_provider.get_file_handler(user_id, filename)
-#     event_ids = nurio.get_event_ids()
-#     event_ids = [i[1] for i in event_ids if i[0] == run_number]
-#     return filename, [{'label':i, 'value':i} for i in event_ids], len(event_ids)-1
-
-# @callback(
-#     [Output('event-counter-slider', 'value'),
-#      Output('event-info-id', 'value'),
-#      Output('url', 'hash')
-#      ],
-#     [Input('btn-next-event', 'n_clicks_timestamp'),
-#      Input('btn-previous-event', 'n_clicks_timestamp'),
-#      Input('event-info-run', 'value'),
-#      Input('event-info-id', 'value'),
-#      Input('url', 'hash')
-#      ],
-#     [State('user_id', 'children'),
-#      State('filename', 'value'),
-#      State('station-id-dropdown', 'value')],
-# )
-# def set_event_number(next_evt_click_timestamp, prev_evt_click_timestamp, run_number, event_id, hash, juser_id, filename, station_id):
-#     context = dash.callback_context
-    
-#     # update triggered by url
-#     if context.triggered[0]['prop_id'] == 'url.hash':
-#         logger.debug('Triggered by URL')
-#         idx = np.array([hash.find('S'), hash.find('R'), hash.find('E')])
-#         if np.any(idx < 0): # hash doesn't completely specify location
-#             raise PreventUpdate
-#         station_id = int(hash[idx[0]+1:idx[1]])
-#         run_number = int(hash[idx[1]+1:idx[2]])
-#         event_id = int(hash[idx[2]+1:])
-#         filename = filename_table.loc[(station_id, run_number), 'filenames_root']
-    
-#     if (filename is None) or (run_number is None):
-#         raise PreventUpdate
-#     user_id = json.loads(juser_id)
-#     number_of_events = browser_provider.get_file_handler(user_id, filename).get_n_events()
-#     event_ids = browser_provider.get_file_handler(user_id, filename).get_event_ids()
-#     # number_of_events = browser_provider.get_n_events()
-#     # event_ids = browser_provider.get_event_ids()
-
-#     mask = event_ids == (run_number, event_id)
-#     mask = mask[:,0] * mask[:,1]
-#     if not np.sum(mask):
-#         return 0, event_ids[0][1],  f'#S{station_id}R{run_number}E{event_ids[0][1]}' # if not set, we initialize to the first event in run
-#     else:
-#         event_i = np.where(mask)[0][0]
-#     if context.triggered[0]['prop_id'] == 'event-info-id.value':
-#         pass
-#     elif context.triggered[0]['prop_id'] == 'event-info-run.value': # set to first event in run - #TODO: add persistence?
-#         event_i = 0
-#     elif context.triggered[0]['prop_id'] == 'btn-previous-event.n_clicks_timestamp':
-#         if event_i > 0:
-#             event_i -= 1
-#     elif context.triggered[0]['prop_id'] == 'btn-next-event.n_clicks_timestamp':
-#         if event_i + 1 != number_of_events:
-#             event_i += 1
-#     logger.info(f"Loading event S{station_id}:R{run_number}:E{event_ids[event_i][1]} from {filename}...")
-
-#     outputs = event_i, event_ids[event_i][1], f'#S{station_id}R{run_number}E{event_ids[event_i][1]}'
-
-#     return outputs
-
-
-
 
 
 @callback(
-    Output('trigger-info-table', 'data'),
-    [Input('filename', 'value'),
-     Input('station-id-dropdown', 'value'),
-     Input('event-counter-slider', 'value')],
+    Output('eventviewer-run-info-table', 'data'),
+    [Input('station-id-dropdown', 'value'),
+     Input('event-info-run', 'value'),
+     ],
     [State('user_id', 'children')]
 )
-def fill_trigger_info_table(filename, station_id, event_i, juser_id):
-    if filename is None:
-        raise PreventUpdate
-    user_id = json.loads(juser_id)
-    nurio = browser_provider.get_file_handler(user_id, filename)
-    event = nurio.get_event_i(event_i)
-    station = event.get_station(station_id)
-    trigger_names = []
-    trigger_bools = []
-    for trigger_key in station.get_triggers():
-        trigger = station.get_trigger(trigger_key)
-        trigger_names.append(trigger.get_name())
-        trigger_bools.append(str(trigger.has_triggered()))
+def fill_run_info_table(station_id, run_number, juser_id):
+    table = run_table.get_table().query('station==@station_id&run==@run_number').iloc[0]
+    keys = ['time_start', 'time_end', 'n_events_recorded',
+       'n_events_transferred', 'trigger_rf0_enabled', 'trigger_rf1_enabled',
+       'trigger_ext_enabled', 'trigger_pps_enabled', 'trigger_soft_enabled',
+       'daq_config_comment', 'firmware_version','run_type']
+    data_dict = {}
+    data_dict['start time'] = table.loc['time_start'].strftime('%Y-%m-%d %H:%M:%S')
+    data_dict['end time'] = table.loc['time_end'].strftime('%Y-%m-%d %H:%M:%S')
+    # data_dict['time'] = '{} - {}'.format(*[table.loc[key].strftime('%Y-%m-%d %H:%M:%S') for key in ['time_start', 'time_end']])
+    data_dict['n_events (transferred / total)'] = '{} / {}'.format(*table.loc[['n_events_transferred', 'n_events_recorded']])
+    data_dict['active triggers'] = ', '.join([k for k in ['rf0', 'rf1', 'ext', 'pps', 'soft'] if table.loc[f'trigger_{k}_enabled']])
+    for key in ['daq_config_comment', 'firmware_version', 'run_type']:
+        data_dict[key.replace('_', ' ')] = table.loc[key]
+
     data_list = [
-        {'Trigger':trigger_names[i],'Value':trigger_bools[i]}
-        for i in range(len(trigger_names))]
+        {'Run Info':key, '':value}
+        for key,value in data_dict.items()
+    ]
     return data_list
 
-
-# @callback(
-#     Output('event-info-run', 'options'),
-#     Input('station-id-dropdown', 'value'),
-# )
-# def update_event_info_run_options(station_id):
-#     if station_id == None:
-#         return []
-#     run_numbers = run_table.get_table().query('station==@station_id').run.values
-#     return [{'label':i, 'value':i} for i in run_numbers]
-
-
+## callback to update event time and trigger type
 @callback(
-    Output('event-info-time', 'children'),
+    [Output('event-info-time', 'children'),
+     Output('event-info-trigger', 'children')],
     [Input('event-info-id', 'value'),
      Input('filename', 'value'),
      Input('station-id-dropdown', 'value')],
@@ -375,14 +193,21 @@ def fill_trigger_info_table(filename, station_id, event_i, juser_id):
      State('user_id', 'children')])
 def update_event_info_time(event_id, filename, station_id, run_number, juser_id):
     if (filename is None) or (station_id is None):
-        return ""
+        return "", ""
     user_id = json.loads(juser_id)
     nurio = browser_provider.get_file_handler(user_id, filename)
     evt = nurio.get_event((run_number, event_id))
-    if evt.get_station(station_id).get_station_time() is None:
-        return ''
-    return '{:%d. %b %Y, %H:%M:%S}'.format(evt.get_station(station_id).get_station_time().datetime)
+    station = evt.get_station(station_id)
+    if station.get_station_time() is None:
+        return '', ''
+    station_time = '{:%d. %b %Y, %H:%M:%S}'.format(evt.get_station(station_id).get_station_time().datetime)
+    trigger_type = ', '.join([trigger for trigger in station.get_triggers()])
+    
+    return station_time, trigger_type
 
+## complicated callback that updates the selected event
+## as well as all possible inputs that affect the selected event
+## in order to keep them synchronised and consistent
 @callback(
     [
         Output('filename', 'value'),
@@ -499,3 +324,4 @@ def update_everything(
     ]
     # logger.debug(f"outputs:{outputs}")
     return outputs
+
