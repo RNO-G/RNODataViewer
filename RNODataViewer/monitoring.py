@@ -256,9 +256,10 @@ def update_debug_logger_output(n_updates, current_value):
 
 
 if __name__ == '__main__':
-    if int(dash.__version__.split('.')[0]) <= 1:
-        if int(dash.__version__.split('.')[1]) < 0:
-            logging.warning("Dash version 0.39.0 or newer is required, you are running version %s. Please update.", dash.__version__)
+    dash_version = [int(i) for i in dash.__version__.split('.')]
+    if dash_version[0] <= 2:
+        if (dash_version[1] < 9) or (dash_version[0] < 2):
+            logging.warning("Dash version 2.9.2 or newer is required, you are running version %s. Please update.", dash.__version__)
     port = parsed_args.port
 
     #TODO if passed here, would need to pass properly to run_stats, which is imported by sub-tabs also
