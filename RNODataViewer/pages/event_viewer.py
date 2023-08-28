@@ -32,6 +32,15 @@ browser_provider.set_filetype(True)
 filename_table = run_table.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
 filename_table = filename_table.set_index(['station', 'run']).sort_index()
 
+trigger_hover_info = (
+    "Which trigger fired for this event. Options are\n"
+    "LT: the low-threshold trigger on the FLOWER board (deep trigger)\n"
+    "RADIANT0: radiant trigger 0 (shallow trigger, upward-facing LPDAs)\n"
+    "RADIANT1: radiant trigger 1 (shallow trigger, downward-facing LPDAs)\n"
+    "RADIANTX: both radiant triggers\n"
+    "FORCE: the periodic (usually 0.1 Hz) 'forced' trigger\n"
+    "UNKNOWN: no trigger flag present"
+)
 event_viewer_layout = html.Div([
     html.Div(id='event-click-coordinator', children=json.dumps(None), style={'display': 'none'}),
     html.Div(id='event-ids', style={'display': 'none'},
@@ -129,8 +138,8 @@ event_viewer_layout = html.Div([
                 html.Div('', className='custom-table-td-last', id='event-info-time',style={'height':'35px'})
             ], className='custom-table-row'),
             html.Div([
-                html.Div('Trigger:', className='custom-table-td'),
-                html.Div('', className='custom-table-td-last', id='event-info-trigger', style={'fontWeight':'bold', 'height':'35px'})
+                html.Div('Trigger:', className='custom-table-td', title=trigger_hover_info),
+                html.Div('', className='custom-table-td-last', id='event-info-trigger', style={'fontWeight':'bold', 'height':'35px'}, title=trigger_hover_info)
             ], className='custom-table-row')
         ], style={'flex': '1', 'min-width':280, 'max-width':400}, className='event-info-table', id='event-info-table'),
         dash.dash_table.DataTable(
