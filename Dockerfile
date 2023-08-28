@@ -33,8 +33,11 @@ ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC:/usr/local/lib/
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 # Install RNODataViewer
-ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
+ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer/RNODataViewer
 ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
+# this is purely to enable git version checking
+ADD .git /usr/local/lib/python3.10/site-packages/RNODataViewer
+
 # Install rnog-runtable tool
 WORKDIR /usr/local/lib/python3.10/site-packages/rnog-runtable
 #avoid https://github.com/pandas-dev/pandas/issues/54449
@@ -46,8 +49,6 @@ RUN pip install -r requirements.txt .
 WORKDIR /usr/local/lib/python3.10/site-packages/NuRadioMC
 RUN git pull
 RUN python3 /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
-
-RUN git -C /usr/local/lib/python3.10/site-packages/NuRadioMC rev-parse --short HEAD
 
 RUN useradd nuradio
 # we give nuradio ownership of NuRadioMC and RNODataViewer to make git version checking work
