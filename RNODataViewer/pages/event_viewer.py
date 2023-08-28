@@ -281,7 +281,9 @@ def update_everything(
             station_id = station_values[current_station_i + 1]
 
     ### update run & run options
-    run_numbers = run_table.get_table().query('station==@station_id').run.values.astype(int)
+    run_numbers = run_table.get_table().query(
+        'station==@station_id').sort_values(
+        by='mjd_last_event', ascending=False).run.values.astype(int)
     run_options = [{'label':i, 'value':i} for i in run_numbers]
 
     try:

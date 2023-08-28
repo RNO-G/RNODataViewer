@@ -86,7 +86,7 @@ def select_runs_button(last_run, last_24h, stations, run_table=run_table):
 def set_filename_dropdown(stations , run_table=run_table):
         tab = run_table.get_table()
         station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
-        tab_selected = tab[station_mask]
+        tab_selected = tab[station_mask].sort_values(by='mjd_last_event', ascending=False) # most recent first
         filtered_names = list(tab_selected.filenames_root)
         data_provider_run.set_filenames([])
         rrr =  [{'label': "Station {}, Run {:.0f}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
