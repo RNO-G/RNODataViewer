@@ -40,7 +40,8 @@ RUN pip install -r requirements.txt .
 #ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
 
 # update NuRadioMC (saves some time when rebuilding docker image)
-RUN cd NuRadioMC && git pull && cd ..
+WORKDIR /usr/local/lib/python3.10/site-packages/NuRadioMC
+RUN git pull
 RUN python3 /usr/local/lib/python3.10/site-packages/NuRadioMC/install_dev.py --install --no-interactive
 
 RUN git -C /usr/local/lib/python3.10/site-packages/NuRadioMC rev-parse --short HEAD
