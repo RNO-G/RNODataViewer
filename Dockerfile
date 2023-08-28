@@ -34,7 +34,10 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 # Install RNODataViewer
 ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
-ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
+# Install rnog-runtable tool
+WORKDIR /usr/local/lib/python3.10/site-packages/RNODataViewer/rnog-runtable
+RUN pip install -r requirements.txt .
+#ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
 
 # update NuRadioMC (saves some time when rebuilding docker image)
 RUN cd NuRadioMC && git pull && cd ..
