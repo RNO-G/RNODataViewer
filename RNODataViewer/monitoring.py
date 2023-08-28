@@ -267,6 +267,8 @@ if __name__ == '__main__':
     #    logging.warning("--rno_data_dir set to: %s.\
     #            Using this as data directory instead of environmental variable RNO_DATA_DIR", parsed_args.rno_data_dir)
     #    os.environ["RNO_DATA_DIR"] = parsed_args.rno_data_dir
+    pip_output = subprocess.check_output(['python3', '-m', 'pip', 'list']).decode()
+    logger.debug(f"Installed python modules:\n{pip_output}")
 
     if parsed_args.open_window:
         webbrowser.open_new("http://localhost:{}".format(port))

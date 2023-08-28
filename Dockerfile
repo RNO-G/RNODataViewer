@@ -36,6 +36,8 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 ADD RNODataViewer /usr/local/lib/python3.10/site-packages/RNODataViewer
 # Install rnog-runtable tool
 WORKDIR /usr/local/lib/python3.10/site-packages/RNODataViewer/rnog-runtable
+#avoid https://github.com/pandas-dev/pandas/issues/54449
+RUN pip install numexpr==2.8.4 
 RUN pip install -r requirements.txt .
 #ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
 
