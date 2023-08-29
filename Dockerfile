@@ -59,4 +59,4 @@ USER nuradio
 EXPOSE 8049
 WORKDIR /usr/local/lib/python3.10/site-packages/RNODataViewer/
 
-CMD python3 RNODataViewer/monitoring.py --port 8049 --waitress
+CMD source ../root/bin/thisroot.sh && python3 RNODataViewer/monitoring.py --port 8049 --waitress
