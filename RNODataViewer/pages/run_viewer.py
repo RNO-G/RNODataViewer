@@ -72,6 +72,8 @@ def select_runs_button(last_run, last_24h, stations, run_table=run_table):
     station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
     tab_selected = tab[station_mask]
     tab_selected_sort = tab_selected.sort_values(by='mjd_last_event')
+    if not len(tab_selected):
+         raise PreventUpdate
     if trigger == 'select-last-run':
         return [tab_selected_sort.iloc[-1].loc['filenames_root']]
     elif trigger == 'select-last-24h':
