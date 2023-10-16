@@ -1,10 +1,11 @@
 #FROM oci-reg-ztf.zeuthen.desy.de/radio/nu_radio_mc:latest
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 LABEL maintainer="The NuRadioReco Authors <physics-astro-nuradiomcdev@lists.uu.se>"
 USER root
 
 RUN apt-get update
 RUN apt-get upgrade -y
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get install -y python3.10
 
 WORKDIR /usr/local/lib/python3.10/site-packages
@@ -14,8 +15,8 @@ RUN apt-get install -y git wget build-essential cmake dpkg-dev cmake g++ gcc bin
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
 RUN git clone https://github.com/RNO-G/mattak.git
 
-RUN wget -nv https://root.cern/download/root_v6.26.10.Linux-ubuntu22-x86_64-gcc11.3.tar.gz
-RUN tar -xzvf root_v6.26.10.Linux-ubuntu22-x86_64-gcc11.3.tar.gz
+RUN wget -nv https://root.cern/download/root_v6.28.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
+RUN tar -xzvf root_v6.28.06.Linux-ubuntu20-x86_64-gcc9.4.tar.gz
 SHELL ["/bin/bash", "-c"]
 
 # ENV LD_LIBRARY_PATH=/usr/lib64:/usr/lib:/usr/local/lib64/:/usr/local/lib:$LD_LIBRARY_PATH
