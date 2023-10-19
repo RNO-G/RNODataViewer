@@ -185,7 +185,6 @@ def update_version_info(n_intervals):
     # # check for updated version on remote
     # subprocess.call(['git', '-C', os.path.dirname(__file__), 'fetch', 'origin', '+refs/heads/feature/monitoring:refs/remotes/origin/feature/monitoring']) #TODO - change this to 'master'
     # dataviewer_current_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'origin/feature/monitoring']).decode()
-    deployment_date = time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time()))
 
     from NuRadioMC import __path__ as nuradiomc_path
     nuradiomc_version = subprocess.check_output(['git', '-C', os.path.dirname(nuradiomc_path[0]), 'rev-parse', '--short', 'HEAD']).decode()
@@ -207,7 +206,7 @@ def update_version_info(n_intervals):
         nuradiomc_string = f'latest: {nuradiomc_current_version}'
 
     version_info_table = [
-        f'Deployed: {deployment_date} (UTC) (version {dataviewer_version})',
+        f'Deployed: {DEPLOYMENT_DATE} (UTC) (version {dataviewer_version})',
         html.Br(),
         f'NuRadioMC version: {nuradiomc_version} ({nuradiomc_string})',
         html.Br(),
@@ -256,6 +255,8 @@ def update_debug_logger_output(n_updates, current_value):
 
 
 if __name__ == '__main__':
+    global DEPLOYMENT_DATE # for debugging
+    DEPLOYMENT_DATE = time.strftime('%Y-%m-%d %H:%M', time.gmtime(time.time()))
     dash_version = [int(i) for i in dash.__version__.split('.')]
     if dash_version[0] <= 2:
         if (dash_version[1] < 9) or (dash_version[0] < 2):

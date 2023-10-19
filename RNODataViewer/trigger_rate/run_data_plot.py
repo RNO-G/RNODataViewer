@@ -68,7 +68,7 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
     fig = go.Figure()
     for i_station, station_id in enumerate(station_ids):
         table_i = selected.query('station==@station_id')
-        physics_mask = table_i.run_type == 'physics'
+        physics_mask = (table_i.run_type == 'physics') | (table_i.run_type == 'not specified')
         normal_runs = table_i[physics_mask]
         special_runs = table_i[~physics_mask]
         if which_plot == 'run_length':
@@ -84,7 +84,7 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
                 x=Time(normal_runs.time_start).fits,
                 y=y_normal,
                 mode='markers',
-                name="Station {}".format(station_id),
+                name="Station {} (physics run / not specified)".format(station_id),
                 marker={'symbol':100,'color':plot_colors[i_station % len(plot_colors)], 'opacity':1.0,'size':7},
                 customdata=normal_runs.run,
                 hovertemplate="%{y}<br>%{x}<br>Run %{customdata}",

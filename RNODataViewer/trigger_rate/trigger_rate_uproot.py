@@ -65,6 +65,8 @@ class trigger_rates:
 
     def __init__(self, table_path='/tmp/RNODataViewer/data/trigger_rates'):
         self.table_dir_local = table_path
+        if not os.path.exists(table_path):
+            os.makedirs(table_path)
         self.hash_table_path_local = os.path.join(table_path, 'trigger_rate_hash_table.hdf5')
         self.hash_table_path_url = 'https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rate_hash_table.hdf5'
         self.last_update = Time('1970-01-01')
@@ -83,14 +85,15 @@ class trigger_rates:
             try:
                 df_bytes = requests.get(self.hash_table_path_url)
                 df_bytes.raise_for_status()
-                with open(self.hash_table_path_local, 'wb') as f:
+                with open(self.hash_table_path_local+'.upd', 'wb') as f:
                     f.write(df_bytes.content)
             except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
                 logger.error(msg="Failed to update trigger rate tables, will try to use local versions instead...", exc_info=e)
             
-            hash_table = pd.read_hdf(self.hash_table_path_local)
+            hash_table = pd.read_hdf(self.hash_table_path_local+'.upd')
             if self.hash_table is None:
                 update_tables = hash_table.index.levels[0] # update all tables
+                logger.info(f'No previous hash found, updating all {len(update_tables)} trigger tables')
             else:
                 update_tables = []
                 for i in hash_table.index.levels[0]:
@@ -103,9 +106,9 @@ class trigger_rates:
                     update_tables.append(i)
             
             if len(update_tables):
-                times = Time([f'{month}-01' for month in update_tables])
-                mask = (times >= start_time) & (times <= end_time)
-                update_tables = np.array(update_tables)[mask]
+                # times = Time([f'{month}-01' for month in update_tables])
+                # mask = (times >= start_time) & (times <= end_time)
+                # update_tables = np.array(update_tables)[mask]
 
                 for table in update_tables:
                     logger.warning(f"Downloading updated trigger rate table {table}")
@@ -114,15 +117,21 @@ class trigger_rates:
                         df_bytes.raise_for_status()
                         with open(os.path.join(self.table_dir_local, f"trigger_rates_{table}.hdf5"), 'wb') as f:
                             f.write(df_bytes.content)
+                        # we update the hash table only AFTER the new table has been downloaded
+                        # this prevents issues if the update is interrupted by the user
+                        if self.hash_table is not None:
+                            if table in self.hash_table.index:
+                                self.hash_table.drop(table, inplace='True')
+                        self.hash_table = pd.concat([self.hash_table, hash_table.loc[[table]]]).sort_index()
+                        self.hash_table.to_hdf(self.hash_table_path_local, 'df', 'w')
                     except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
                         logger.error(msg=f"Unable to update trigger table {table}", exc_info=e)
             
-            self.hash_table = hash_table
             self.last_update = now
-
         tables = self.hash_table.index.levels[0]
         times = Time([f'{month}-01' for month in tables])
-        mask = (times >= start_time) & (times <= end_time)
+        start_month = Time(f'{Time(start_time).iso[:7]}-01') # stupid way of converting to 1st day of month
+        mask = (times >= start_month) & (times <= end_time)
         tables = tables[mask]
         trigger_rate_tables = [
             pd.read_hdf(os.path.join(self.table_dir_local, f"trigger_rates_{table}.hdf5"))
@@ -183,7 +192,7 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
     bins = np.arange(t_start_unix, t_end_unix + binwidth_sec + 1, binwidth_sec)
     runtable = run_table.get_table().query("time_end>@t_start&time_start<@t_end")
     for station_id in station_ids:
-        if station_id not in df.index.levels[0]:
+        if station_id not in df.index.get_level_values(0).unique(): # index.levels doesn't update after the .query above
             logger.info(f"No trigger rates for station {station_id} in current time selection, skipping...")
             continue
         logger.debug(f"Getting trigger table for station {station_id}...")
