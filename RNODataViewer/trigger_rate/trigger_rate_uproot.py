@@ -121,7 +121,7 @@ class trigger_rates:
                         # this prevents issues if the update is interrupted by the user
                         if self.hash_table is not None:
                             if table in self.hash_table.index:
-                                self.hash_table.drop(table, inplace='True')
+                                self.hash_table.drop(table, inplace=True)
                         self.hash_table = pd.concat([self.hash_table, hash_table.loc[[table]]]).sort_index()
                         self.hash_table.to_hdf(self.hash_table_path_local, 'df', 'w')
                     except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
