@@ -82,7 +82,7 @@ def get_spectrogram_average_root(station_id, channel_ids, filenames=None, suppre
     iterator = data_provider.get_event_iterator()
     n_total = 0
     n_forced = 0
-    
+
     for i, event in enumerate(iterator()):
         trigger_type = trigger_types[i]
         station = event.get_station(station_id)
@@ -93,7 +93,7 @@ def get_spectrogram_average_root(station_id, channel_ids, filenames=None, suppre
             spectra[j] += np.abs(channel.get_frequency_spectrum())
             if trigger_type == 'FORCE':
                 spectra_forced[j] += np.abs(channel.get_frequency_spectrum())
-    
+
     frequencies = channel.get_frequencies()
     logger.debug('n_events {} forced trigger {}'.format(n_total, n_forced))
 

@@ -15,7 +15,7 @@ trigger_names = ["RADIANT0", "RADIANT1", "RADIANTX", "LT", "FORCE", "PPS", "UNKN
 # @six.add_metaclass(NuRadioReco.utilities.metaclasses.Singleton)
 class RNODataProviderRoot(dataprovider.DataProvider):
     def __init__(self, channels=None, ):
-        super().__init__(use_root=True)
+        super().__init__(filetype='root')
         self.__filenames = None
 
     def set_filenames(self, filenames):
@@ -72,6 +72,5 @@ class RNODataProviderRoot(dataprovider.DataProvider):
         filehandler = self.get_file_handler('runviewer', self.__filenames)
         return filehandler.get_event_by_index(i)
 
-data_provider = RNODataProviderRoot() # not sure that this is used
-data_provider_run = RNODataProviderRoot()
-data_provider_event = dataprovider.DataProvider(use_root=True, create_new=True)
+data_provider = RNODataProviderRoot()
+data_provider_event = dataprovider.DataProvider(filetype='root')

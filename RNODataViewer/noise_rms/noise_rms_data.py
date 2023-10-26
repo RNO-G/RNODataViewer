@@ -1,5 +1,5 @@
 import RNODataViewer.base.data_provider_nur
-from RNODataViewer.base.data_provider_root import data_provider_run
+from RNODataViewer.base.data_provider_root import data_provider
 from NuRadioReco.framework.parameters import channelParameters as chp
 from dash.exceptions import PreventUpdate
 import numpy as np
@@ -25,14 +25,13 @@ def get_noise_rms_data_nur(station_id, channel_ids):
 
 def get_noise_rms_data_root(station_id, channel_ids, filenames=None):
     print("Getting noise data")
-    data_provider = data_provider_run
     if not filenames is None:
         data_provider.set_filenames(filenames)
     else:
         raise PreventUpdate
     print("FILES: ", data_provider.get_file_names())
     times = data_provider.get_event_times(station_id)
-    filehandler = data_provider_run.get_file_handler('runviewer', filenames)
+    filehandler = data_provider.get_file_handler('runviewer', filenames)
     noise_rms = np.array([
         [np.std(evt.get_station(station_id).get_channel(channel_id).get_trace())
             for channel_id in channel_ids] for evt in filehandler.run()

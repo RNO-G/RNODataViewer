@@ -77,7 +77,12 @@ def update_file_list(n_clicks, start_date, start_time, end_date, end_time, stati
    Output({"type": "file_download_trigger", 'path':MATCH}, "data"),
    [Input({"type":"file_download_button", 'path':MATCH}, 'n_clicks')],
    [State({"type":"file_download_button", 'path':MATCH}, 'id')],
-   prevent_initial_call=True
+   prevent_initial_call=True,
+   background=True,
+#    running=[
+#        (Output({"type":"file_download_button", 'path':MATCH}, 'disabled'), True, False)
+#    ]
+    # cancel=[Input('tab-selection', 'value')]
 )
 def file_download(n_clicks, which_file):
     if n_clicks is None:

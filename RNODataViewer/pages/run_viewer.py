@@ -5,8 +5,8 @@ from dash import dcc, html, callback
 from dash.dependencies import Input, Output, State
 
 import webbrowser
-from RNODataViewer.base.data_provider_root import data_provider_run
-import RNODataViewer.base.data_provider_nur
+from RNODataViewer.base.data_provider_root import data_provider
+# import RNODataViewer.base.data_provider_nur
 import RNODataViewer.file_list.file_list
 import RNODataViewer.station_selection.station_selection
 import RNODataViewer.spectrogram.spectrogram
@@ -18,8 +18,6 @@ from dash import callback_context
 from dash.exceptions import PreventUpdate
 
 dash.register_page(__name__, path='/runViewer')
-
-# data_provider_run = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
 
 
 run_viewer_layout = html.Div([
@@ -90,6 +88,6 @@ def set_filename_dropdown(stations , run_table=run_table):
         station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
         tab_selected = tab[station_mask].sort_values(by='mjd_last_event', ascending=False) # most recent first
         filtered_names = list(tab_selected.filenames_root)
-        data_provider_run.set_filenames([])
+        data_provider.set_filenames([])
         rrr =  [{'label': "Station {}, Run {:.0f}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
         return rrr

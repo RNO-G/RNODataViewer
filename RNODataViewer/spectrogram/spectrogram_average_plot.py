@@ -8,7 +8,6 @@ from dash import callback_context
 from dash.exceptions import PreventUpdate
 import plotly.graph_objs as go
 import plotly.subplots
-import RNODataViewer.base.data_provider_nur
 import RNODataViewer.base.error_message
 import RNODataViewer.spectrogram.spectrogram_data
 from NuRadioReco.utilities import units
@@ -35,7 +34,7 @@ layout = html.Div([
         ], className='panel panel-heading'),
         html.Div([
             dcc.RadioItems(
-                id='spectrogram-avg-plot-layout', 
+                id='spectrogram-avg-plot-layout',
                 options=[
                     {'label':'Individual channels', 'value':'separate'},
                     {'label':'Grouped (all events)', 'value':'grouped0'},
@@ -55,7 +54,17 @@ layout = html.Div([
     [State('station-id-dropdown-single', 'value'),
      State('channel-id-dropdown', 'value'),
      State('file-name-dropdown-2', 'value'),
-     State('spectrogram-avg-plot', 'figure')]
+     State('spectrogram-avg-plot', 'figure')],
+    background=True,
+    # running=[
+    #     (Output('spectrogram-avg-reload-button', 'disabled'), True, False)
+    # ],
+    # cancel=[
+    #     Input('station-id-dropdown-single', 'value'),
+    #     Input('channel-id-dropdown', 'value'),
+    #     Input('file-name-dropdown-2', 'value'),
+    #     Input('tab-selection', 'value')
+    # ]
 )
 def update_spectrogram_plot(n_clicks, plot_layout, station_id, channel_ids, file_names, current_fig):
     if len(file_names) == 0:
@@ -69,7 +78,7 @@ def update_spectrogram_plot(n_clicks, plot_layout, station_id, channel_ids, file
         if len(traces) == 0:
             raise PreventUpdate
         channel_ids = np.sort(np.unique([int(trace['uid'].split('_')[-1]) for trace in traces]))
-    else:  
+    else:
         frequencies, spectra_all, spectra_forced = RNODataViewer.spectrogram.spectrogram_data.get_spectrogram_average_root(
             station_id, channel_ids, file_names, suppress_zero_mode=True)
         traces = []
@@ -94,7 +103,7 @@ def update_spectrogram_plot(n_clicks, plot_layout, station_id, channel_ids, file
                     # legendgroup='All events',
                     # showlegend=not bool(i_channel),
                     # line={'color':'blue','dash':'dot'}
-                )    
+                )
             )
     if plot_layout == 'separate':
         subplot_titles = [channel_mapping.label[channel_id] for channel_id in channel_ids]
@@ -216,7 +225,7 @@ def update_spectrogram_plot(n_clicks, plot_layout, station_id, channel_ids, file
                 line={'color':'blue','dash':'dot'}
             ), row=i_channel // 4 + 1, col=i_channel % 4 + 1
         )
-        
+
         fig['layout']['xaxis{}'.format(i_channel + 1)].update(showticklabels=True)
     fig.update_layout({'height': 300 * n_rows})
     return fig

@@ -12,16 +12,11 @@ import subprocess
 import json
 import uuid
 from RNODataViewer.base.app import app
-# app.config.suppress_callback_exceptions = True
 
 import RNODataViewer.base.data_provider_root
-import RNODataViewer.base.data_provider_nur
-from RNODataViewer.file_list.run_stats import station_entries #, RunStats
-# from tabs import rnog_overview
-# from tabs import run_viewer
-# from tabs import event_viewer
+# import RNODataViewer.base.data_provider_nur
+from RNODataViewer.file_list.run_stats import station_entries, run_table
 
-from file_list.run_stats import run_table
 import astropy.time
 import time
 import pandas as pd
@@ -75,11 +70,11 @@ if parsed_args.reverse_proxy_path is not None:
 logger.info("Starting the monitoring application")
 
 # import the run table (which is a pandas table holding available runs / paths / start/stop times etc)
-filenames_root = run_table.get_table().filenames_root.values
+# filenames_root = run_table.get_table().filenames_root.values
 filenames_nur = []
 
 # RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(filenames_root)
-RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
+# RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
 
 
 trigger_hover_info = (
