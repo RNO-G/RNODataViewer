@@ -6,7 +6,6 @@ from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
 import plotly.graph_objs as go
-import RNODataViewer.base.data_provider_nur
 import RNODataViewer.base.error_message
 from NuRadioReco.utilities import units
 from NuRadioReco.framework.parameters import channelParameters as chp
