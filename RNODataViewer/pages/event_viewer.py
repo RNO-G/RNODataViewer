@@ -12,7 +12,7 @@ import glob
 from RNODataViewer.apps import traces
 import os
 import argparse
-import NuRadioReco.eventbrowser.dataprovider
+# import NuRadioReco.eventbrowser.dataprovider
 # import NuRadioReco.eventbrowser.dataprovider_root
 from RNODataViewer.base.data_provider_root import data_provider_event
 import logging
@@ -26,8 +26,9 @@ dash.register_page(__name__, path='/eventViewer')
 
 data_folder = DATA_DIR
 
-browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
-browser_provider.set_filetype(True)
+# browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
+# browser_provider.set_filetype(True)
+browser_provider = data_provider_event
 
 filename_table = run_table.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
 filename_table = filename_table.set_index(['station', 'run']).sort_index()
