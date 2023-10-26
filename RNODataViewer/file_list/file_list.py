@@ -1,4 +1,4 @@
-from dash import html, dcc, callback, MATCH
+from dash import html, dcc, callback, MATCH, ALL
 from dash import dcc
 from dash.exceptions import PreventUpdate
 import pandas as pd
@@ -37,9 +37,11 @@ layout = html.Div([
      Input('time-selector-start-time', 'value'),
      Input('time-selector-end-date', 'date'),
      Input('time-selector-end-time', 'value'),
-     Input('overview-station-id-dropdown', 'value')],
+     Input('overview-station-id-dropdown', 'value'),
+     Input({'type':'show_more_button', 'index':ALL}, 'n_clicks')
+     ],
 )
-def update_file_list(n_clicks, start_date, start_time, end_date, end_time, station_ids):
+def update_file_list(n_clicks, start_date, start_time, end_date, end_time, station_ids, show_n_files_clicks):
     try:
         t_start = astropy.time.Time(start_date) + astropy.time.TimeDelta(start_time, format='sec')
         t_end = astropy.time.Time(end_date) + astropy.time.TimeDelta(end_time, format='sec')
@@ -51,13 +53,24 @@ def update_file_list(n_clicks, start_date, start_time, end_date, end_time, stati
     selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)].sort_values(['station', 'time_start'])
     selected = selected.query('station in @station_ids')
 
+    if not len(show_n_files_clicks):
+        show_n_files_clicks = 1
+    else:
+        show_n_files_clicks = show_n_files_clicks[-1]
+
     download_buttons = [
         html.Div([html.Button(
             f'station{selected.loc[i].station}/run{selected.loc[i].run:.0f}',
             id={'type': 'file_download_button', 'path':selected.loc[i].filenames_root},
             n_clicks=None, title='Click to download'
-        ), dcc.Download(id={'type':'file_download_trigger', 'path':selected.loc[i].filenames_root})]) for i in selected.index
+        ), dcc.Download(id={'type':'file_download_trigger', 'path':selected.loc[i].filenames_root})]) for i in selected.index[:50*show_n_files_clicks]
     ]
+    if len(selected) > 50*show_n_files_clicks:
+        expand_list_button = html.Div([html.Button(
+            'Show more...', id={'type':'show_more_button','index':show_n_files_clicks}, title='Show more files...', n_clicks=show_n_files_clicks
+        )])
+        download_buttons += [expand_list_button]
+
     return download_buttons
 
 @callback(
