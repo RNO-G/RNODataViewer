@@ -16,13 +16,11 @@ from RNODataViewer.base.app import app
 
 import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.data_provider_nur
-
+from RNODataViewer.file_list.run_stats import station_entries #, RunStats
 # from tabs import rnog_overview
 # from tabs import run_viewer
 # from tabs import event_viewer
 
-
-#TODO: need for updating run_table with hidden div? eg. dcc.Interval or other solution?
 from file_list.run_stats import run_table
 import astropy.time
 import time
@@ -84,6 +82,16 @@ filenames_nur = []
 RNODataViewer.base.data_provider_nur.RNODataProvider().set_filenames(filenames_nur)
 
 
+trigger_hover_info = (
+    "Which trigger fired for this event. Options are\n"
+    "LT: the low-threshold trigger on the FLOWER board (deep trigger)\n"
+    "RADIANT0: radiant trigger 0 (shallow trigger, upward-facing LPDAs)\n"
+    "RADIANT1: radiant trigger 1 (shallow trigger, downward-facing LPDAs)\n"
+    "RADIANTX: both radiant triggers\n"
+    "FORCE: the periodic (usually 0.1 Hz) 'forced' trigger\n"
+    "UNKNOWN: no trigger flag present"
+)
+
 app.title = "RNO-G Data Monitor"
 
 app.layout = html.Div([
@@ -103,6 +111,120 @@ app.layout = html.Div([
             value='overview_tab', # start at general overview page by default
             id='tab-selection'
         ),
+       html.Div([
+            html.Div(id='event-click-coordinator', children=json.dumps(None), style={'display': 'none'}),
+            html.Div(id='event-ids', style={'display': 'none'},
+                children=json.dumps([])),
+            html.Div(
+                dcc.Slider(id='event-counter-slider', value=0, min=0, max=0), # the plots in the eventbrowser are linked to 'event-counter-slider'
+                style={'display':'none'}
+            ),
+            dcc.Dropdown(id='filename', value=None, style={'display':'None'}),
+            html.Div([
+                html.Div(
+                    html.Div([
+                        html.Button(
+                            [
+                                ' < '
+                            ],
+                            id='btn-previous-station',
+                            title='Previous station',
+                            style={'height':'35px'}
+                            # className='btn btn-primary',
+                        ),
+                        dcc.Dropdown(
+                            id='station-id-dropdown',
+                            options=station_entries,
+                            clearable=False,
+                            multi=False,
+                            style={'flex':1,'min-width':'120px'},
+                            value=None,
+                            persistence=True,
+                            persistence_type='memory'
+                        ),
+                        html.Button(
+                            [
+                                ' > '
+                            ],
+                            id='btn-next-station',
+                            title='Next station',
+                            style={'height':'35px'}
+                            # className='btn btn-primary',
+                        ),
+                        ], style={'flex':1, 'display':'inherit'}
+                    )
+                , className='custom-table-row'),
+                html.Div([
+                    html.Div('Run:', className='custom-table-td'),
+                    html.Button(
+                            [
+                                ' < '
+                            ],
+                            id='btn-next-run',
+                            title='Previous run',
+                            style={'height':'35px'}
+                        ),
+                    html.Div(
+                        dcc.Dropdown(
+                            value=None, options=[], searchable=True, clearable=False,
+                            # persistence=True, persistence_type='memory',
+                            id='event-info-run', style={'flex':1}),
+                        id='event-info-run-container', style={'flex':1}),
+                    html.Button(
+                        [
+                            ' > '
+                        ],
+                        id='btn-previous-run',
+                        title='Next run',
+                        style={'height':'35px'}
+                    ),
+                ], className='custom-table-row'),
+                html.Div([
+                    html.Div('Event:', className='custom-table-td'),
+                    html.Button(
+                            [
+                                ' < '
+                            ],
+                            id='btn-previous-event',
+                            title='Previous event',
+                            style={'height':'35px'}
+                        ),
+                    dcc.Dropdown(
+                        value=None, options=[], searchable=True, clearable=False,
+                        # persistence=True, persistence_type='memory',
+                        id='event-info-id', style={'flex':1}),
+                    html.Button(
+                        [
+                            ' > '
+                        ],
+                        id='btn-next-event',
+                        title='Next event',
+                        style={'height':'35px'}
+                    ),
+                ], className='custom-table-row'),
+                html.Div([
+                    html.Div('Time:', className='custom-table-td'),
+                    html.Div('', className='custom-table-td-last', id='event-info-time',style={'height':'35px'})
+                ], className='custom-table-row'),
+                html.Div([
+                    html.Div('Trigger:', className='custom-table-td', title=trigger_hover_info),
+                    html.Div('', className='custom-table-td-last', id='event-info-trigger', style={'fontWeight':'bold', 'height':'35px'}, title=trigger_hover_info)
+                ], className='custom-table-row')
+            ], style={'flex': '1', 'min-width':280, 'max-width':400}, className='event-info-table', id='event-info-table'),
+            dash.dash_table.DataTable(
+                columns=[{"name":i, "id":i} for i in ['Run Info', '']],
+                style_header=dict(fontWeight='bold',textAlign='left'),
+                style_table=dict(padding='0px 25px 0px 0px'),
+                style_cell=dict(textAlign='left'),
+                style_data_conditional=[
+                    {
+                        'if':{'filter_query':'{Value} = "True"', 'column_id':'Value'},
+                        'color':'green',
+                        'fontWeight':'bold'
+                    }
+                ],
+                id='eventviewer-run-info-table'),
+    ], style={'display': 'none'}, id='eventViewer-inputs'),
     # html.Div(id='active-monitoring-tab'),
     # ### use hidden links to make the tab buttons work with pages - hacky?
     # dcc.Link(id='link-home', href='/', style={'display':'none'}),
@@ -129,7 +251,9 @@ app.layout = html.Div([
         children=[
             html.Iframe(id='logger-output', srcDoc='',
             style={'width':'100%', 'height':350}),
-            dcc.Input(id='debug-input', debounce=True)],
+            dcc.Input(id='debug-input', debounce=True),
+            html.Div(id='mem-usage', children='')
+            ],
         style={'display':'none', 'margin-left':'5px','margin-right':'5px'})
     # dcc.Tooltip("This is the overview tab", targ)
     # TODO three tabs, the method below should avoid reloading tabs when switching, but callback ids need to be unique across all tabs
@@ -153,7 +277,7 @@ def set_uuid(pathname, juser_id):
 
 @callback(
         [Output('url', 'pathname'),
-         Output('tab-selection', 'value')],
+         Output('tab-selection', 'value'), Output('eventViewer-inputs', 'style')],
         [Input('tab-selection', 'value'), Input('url', 'pathname')],
         prevent_initial_call=True
 )
@@ -162,20 +286,17 @@ def tab_selection(tab, pathname):
     logger.debug(f'current tab: {tab} / current pathname: {pathname} / trigger: {triggering_component}')
 
     if triggering_component == 'url':
-        return pathname, pathname # set from url
+        page = pathname # set from url
     else:
-        return tab, tab
-    
+        page = tab
 
-# @callback(Output('active-monitoring-tab', 'children'),
-#               [Input('tab-selection', 'value')])
-# def render_content(tab):
-#     if tab == 'overview_tab':
-#         return rnog_overview.overview_layout
-#     elif tab == 'runbrowser_tab':
-#         return run_viewer.run_viewer_layout
-#     elif tab == 'eventbrowser_tab':
-#         return event_viewer.event_viewer_layout
+    if page == '/eventViewer':
+        displaystyle = {'display':'flex'}
+    else:
+        displaystyle = {'display':'none'}
+
+    return page, page, displaystyle
+
 
 @callback(Output('version-info', 'children'),
               [Input('self-updater', 'n_intervals')])
@@ -235,7 +356,8 @@ def show_debug_output(n_clicks, debug_style, current_value):
     return [button_label, debug_style, log_update_interval]
 
 @callback(
-        Output('logger-output', 'srcDoc'),
+        [Output('logger-output', 'srcDoc'),
+         Output('mem-usage', 'children')],
         [Input('debug-log-updater', 'n_intervals'),
          Input('show-debug-output', 'children')]
 )
@@ -251,7 +373,14 @@ def update_debug_logger_output(n_updates, current_value):
             raise PreventUpdate
 
         log_output = ('\n'.join(dashlogger.queue[::-1])).replace('\n', '<BR>')
-        return log_output
+        try: # try to also show memory usage - probably only works on Linux platforms
+            with open('/proc/meminfo') as f:
+                meminfo = f.readlines()
+            meminfo = ' / '.join([k.strip() for k in meminfo if 'MemAvailable' in k] + [k.strip() for k in meminfo if 'MemTotal' in k])
+        except IOError:
+            meminfo = ''
+        # mem_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e3 # should convert KB to MB on Linux and probably is wrong on iOS
+        return log_output, meminfo #f' (MEM: {mem_usage:.0f} MB)'
 
 
 if __name__ == '__main__':
