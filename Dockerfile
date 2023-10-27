@@ -27,7 +27,7 @@ RUN strings /lib/x86_64-linux-gnu/libc.so.6 | grep GLIBC && echo '---' && string
 RUN apt-get install -y pip
 
 # install additional dependencies not covered by the installation script (yet)
-RUN pip install tables waitress pandas
+RUN pip install tables waitress pandas dash[diskcache]
 
 # adding RNODataViewer to PYTHONPATH is unnecessary because we live in that directory
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC:/usr/local/lib/python3.10/site-packages/mattak/py:/usr/local/lib/python3.10/site-packages/RNODataViewer:/usr/local/lib/python3.10/site-packages/rnog-runtable
@@ -42,7 +42,7 @@ ADD .git /usr/local/lib/python3.10/site-packages/RNODataViewer
 # Install rnog-runtable tool
 WORKDIR /usr/local/lib/python3.10/site-packages/rnog-runtable
 #avoid https://github.com/pandas-dev/pandas/issues/54449
-RUN pip install numexpr==2.8.4 
+RUN pip install numexpr==2.8.4
 RUN pip install -r requirements.txt .
 #ADD rnog-runtable /usr/local/lib/python3.10/site-packages/rnog-runtable
 
