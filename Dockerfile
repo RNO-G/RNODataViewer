@@ -11,7 +11,7 @@ RUN apt-get install -y python3.10
 WORKDIR /usr/local/lib/python3.10/site-packages
 
 # Install NuRadioReco
-RUN apt-get install -y git wget build-essential cmake dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev
+RUN apt-get install -y git wget build-essential cmake dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev libafterimage0 libxxhash0 libtbb-dev
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
 RUN git clone https://github.com/RNO-G/mattak.git
 
