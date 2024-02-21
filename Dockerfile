@@ -13,7 +13,6 @@ WORKDIR /usr/local/lib/python3.10/site-packages
 # Install NuRadioReco
 RUN apt-get install -y git wget build-essential cmake dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev libssl-dev libafterimage0 libxxhash0 libtbb-dev
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
-RUN git clone https://github.com/RNO-G/mattak.git
 
 RUN wget -nv https://root.cern/download/root_v6.30.02.Linux-ubuntu20.04-x86_64-gcc9.4.tar.gz
 RUN tar -xzvf root_v6.30.02.Linux-ubuntu20.04-x86_64-gcc9.4.tar.gz
@@ -22,13 +21,13 @@ SHELL ["/bin/bash", "-c"]
 # ENV LD_LIBRARY_PATH=/usr/lib64:/usr/lib:/usr/local/lib64/:/usr/local/lib:$LD_LIBRARY_PATH
 # RUN strings/
 RUN strings /lib/x86_64-linux-gnu/libc.so.6 | grep GLIBC && echo '---' && strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBC && \
-    echo ${LD_LIBRARY_PATH} && source root/bin/thisroot.sh && ls && cd /usr/local/lib/python3.10/site-packages/mattak && ls && make && make install && cd ..
+    echo ${LD_LIBRARY_PATH}
 
 RUN apt-get install -y pip
 
 # install additional dependencies not covered by the installation script (yet)
 RUN pip install tables waitress pandas dash[diskcache]
-
+RUN source root/bin/thisroot.sh && pip install git+https://github.com/RNO-G/mattak.git
 # adding RNODataViewer to PYTHONPATH is unnecessary because we live in that directory
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/NuRadioMC:/usr/local/lib/python3.10/site-packages/mattak/py:/usr/local/lib/python3.10/site-packages/RNODataViewer:/usr/local/lib/python3.10/site-packages/rnog-runtable
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
