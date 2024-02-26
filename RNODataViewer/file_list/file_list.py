@@ -1,11 +1,16 @@
-import RNODataViewer.base.data_provider_nur
-import RNODataViewer.base.data_provider_root
-#from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+from dash import html, dcc, callback, MATCH, ALL
 from dash import dcc
+from dash.exceptions import PreventUpdate
 import pandas as pd
-from dash.dependencies import Input, Output, State, dash_table
+from dash.dependencies import Input, Output, State
+import astropy.time
+import numpy as np
+from .run_stats import run_table
+import os
+import zipfile
+import logging
+
+logger = logging.getLogger()
 
 layout = html.Div([
     html.Div([
@@ -24,50 +29,74 @@ layout = html.Div([
 ], className='panel panel-default')
 
 
-@app.callback(
+
+@callback(
     Output('file-list-display', 'children'),
-    [Input('file-list-reload-button', 'n_clicks')],
-    [State('station-id-dropdown', 'value')]
+    [Input('file-list-reload-button', 'n_clicks'),
+     Input('time-selector-start-date', 'date'),
+     Input('time-selector-start-time', 'value'),
+     Input('time-selector-end-date', 'date'),
+     Input('time-selector-end-time', 'value'),
+     Input('overview-station-id-dropdown', 'value'),
+     Input({'type':'show_more_button', 'index':ALL}, 'n_clicks')
+     ],
 )
-def update_file_list(n_clicks, station_ids):
-    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
-    filenames = data_provider.get_file_names()
-    if filenames is None:
-        return ''
-    children = []
-    for filename in filenames:
-        stn = int(filename.split("/")[-3].replace("station",""))
-        run = int(filename.split("/")[-2].replace("run", ""))
-        if type(station_ids) == int:
-            station_ids = [station_ids]
-        if stn in station_ids:
-            children.append(
-                    html.Div([html.Button('{}'.format(filename), id="btn_image", name='{}'.format(filename))])#,
-                              #html.Button('headers.root', id="btn_image", name='{}'.format(filename.replace("combined.root", "headers.root"))),
-                              #html.Button('daqstatus.root', id="btn_image", name='{}'.format(filename.replace("combined.root", "daqstatus.root"))),
-                              #dcc.Download(id="download_file")])
-            )
-    #df = pd.DataFrame({"File names": filenames})
-    #children.append(dash_table.DataTable(df.to_dict('records'),[{"name": i, "id": i} for i in df.columns], id='selected_run_tbl'))
-    #children.append(dcc.Download(id="download_file"))
-    return children
+def update_file_list(n_clicks, start_date, start_time, end_date, end_time, station_ids, show_n_files_clicks):
+    try:
+        t_start = astropy.time.Time(start_date) + astropy.time.TimeDelta(start_time, format='sec')
+        t_end = astropy.time.Time(end_date) + astropy.time.TimeDelta(end_time, format='sec')
+    except ValueError: # probably someone is typing!
+        raise PreventUpdate
+    if t_start > t_end:
+        raise PreventUpdate
+    tab = run_table.get_table()
+    selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)].sort_values(['station', 'time_start'])
+    selected = selected.query('station in @station_ids')
 
+    if not len(show_n_files_clicks):
+        show_n_files_clicks = 1
+    else:
+        show_n_files_clicks = show_n_files_clicks[-1]
 
-#@app.callback(
-#    Output("download_file", "data"),
-#    Input("btn_image", "n_clicks"),
-#    State("btn_image", "name"),
-#    prevent_initial_call=True,
-#)
-#def file_download(n_clicks, the_file):
-#    return dcc.send_file(the_file, filename="_".join(the_file.split("/")[-3:]))
+    download_buttons = [
+        html.Div([html.Button(
+            f'station{selected.loc[i].station}/run{selected.loc[i].run:.0f}',
+            id={'type': 'file_download_button', 'path':selected.loc[i].filenames_root},
+            n_clicks=None, title='Click to download'
+        ), dcc.Download(id={'type':'file_download_trigger', 'path':selected.loc[i].filenames_root})]) for i in selected.index[:50*show_n_files_clicks]
+    ]
+    if len(selected) > 50*show_n_files_clicks:
+        expand_list_button = html.Div([html.Button(
+            'Show more...', id={'type':'show_more_button','index':show_n_files_clicks}, title='Show more files...', n_clicks=show_n_files_clicks
+        )])
+        download_buttons += [expand_list_button]
 
-#@app.callback(
-#    Output('download_file', 'data'),
-#    Input('selected_run_tbl', 'active_cell'),
-#    prevent_initial_call=True
-#)
-#def update_download_selection(active_cell):
-#    data_provider = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
-#    the_file = data_provider.get_file_names()[active_cell['row']]
-#    return dcc.send_file(the_file, filename="_".join(the_file.split("/")[-3:]))
+    return download_buttons
+
+@callback(
+   Output({"type": "file_download_trigger", 'path':MATCH}, "data"),
+   [Input({"type":"file_download_button", 'path':MATCH}, 'n_clicks')],
+   [State({"type":"file_download_button", 'path':MATCH}, 'id')],
+   prevent_initial_call=True,
+   background=True,
+#    running=[
+#        (Output({"type":"file_download_button", 'path':MATCH}, 'disabled'), True, False)
+#    ]
+    # cancel=[Input('tab-selection', 'value')]
+)
+def file_download(n_clicks, which_file):
+    if n_clicks is None:
+        raise PreventUpdate
+
+    file_dir = os.path.dirname(which_file['path'])
+    logger.info(f'Preparing {file_dir} for download...')
+    files = os.listdir(file_dir)
+    target_dir = file_dir.replace(os.environ['RNO_DATA_DIR'], '')
+
+    def zip_folder(bytesio):
+        with zipfile.ZipFile(bytesio, 'w') as zf:
+            for f in files:
+                zf.write(os.path.join(file_dir, f), os.path.join(target_dir, f))
+        logger.info('Finished zipping, sending zipped file...')
+
+    return dcc.send_bytes(zip_folder, filename='inbox.zip')

@@ -1,6 +1,6 @@
 import numpy as np
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -34,21 +34,21 @@ layout = html.Div([
     ], className='panel panel-default')
 ])
 
-@app.callback(
+@callback(
     Output('active-triggers-plot', 'figure'),
     Input('active-triggers-reload-button', 'n_clicks'),
     [State('time-selector-start-date', 'date'),
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('station-id-dropdown', 'value')]
+     State('overview-station-id-dropdown', 'value')]
 )
 def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, station_ids):
-    t_start = Time(start_date).mjd // 1 + start_time
-    t_end = Time(end_date).mjd // 1 + end_time
+    t_start = Time(start_date) + TimeDelta(start_time, format='sec')
+    t_end = Time(end_date) + TimeDelta(end_time, format='sec')
     trigger_cols = [
-        'has_rf0', 'has_rf1', 'has_ext',
-        'has_pps', 'has_soft'
+        'trigger_rf0_enabled', 'trigger_rf1_enabled',
+        'trigger_ext_enabled', 'trigger_pps_enabled', 'trigger_soft_enabled'
     ]
     trigger_names = [
          'radiant trigger (RF0)', 'radiant trigger (RF1)', 'low threshold (Flower)',
@@ -56,7 +56,7 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
     ]
     trigger_colors = ['blue', 'red', 'green', 'purple', 'orange']
     tab = run_table.get_table()
-    selected = tab[(np.array(tab["mjd_first_event"])>t_start) & (np.array(tab["mjd_last_event"])<t_end)]
+    selected = tab[(np.array(tab["time_start"])>t_start) & (np.array(tab["time_end"])<t_end)]
     if len(selected) == 0:
         return go.Figure()
     n_rows = len(station_ids)
@@ -66,11 +66,11 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
         vertical_spacing=.2 / n_rows,
         specs=[[{'secondary_y':True},],]*n_rows)
     for i_station, station_id in enumerate(station_ids):
-        table_i = selected.query('station==@station_id').sort_values(by='mjd_first_event')
+        table_i = selected.query('station==@station_id').sort_values(by='time_start')
         x_times = Time(np.sort(np.concatenate([
-            table_i["mjd_first_event"], table_i["mjd_first_event"],
-            table_i["mjd_last_event"], table_i["mjd_last_event"]
-        ])), format='mjd').fits
+            table_i["time_start"], table_i["time_start"],
+            table_i["time_end"], table_i["time_end"]
+        ]))).fits
         trigger_active = np.zeros((len(x_times), len(trigger_cols)))
         if len(table_i):
             data_labels = np.concatenate([
@@ -116,7 +116,7 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
     return fig
 
 #show/hide button
-@app.callback(
+@callback(
     [Output('active-triggers-plot-container', 'style'),
      Output('active-triggers-plot-showhide','children')],
     [Input('active-triggers-reload-button', 'n_clicks'),

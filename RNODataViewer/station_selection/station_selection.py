@@ -1,6 +1,6 @@
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -11,7 +11,7 @@ layout = html.Div([
     html.Div('Station ID', className='option-label'),
         html.Div([
             dcc.Dropdown(
-                id='station-id-dropdown',
+                id='overview-station-id-dropdown',
                 options=station_entries,
                 value=[k['value'] for k in station_entries],
                 persistence=True,
@@ -58,7 +58,7 @@ layout_run_browser = html.Div([
         ], className='option-set', style={'display': 'inline-block', 'width':'82%'})
     ], className='input-group', style={'flex': '1','display': 'inline-block', 'width':'100%'})
 
-@app.callback(
+@callback(
     [Output('channel-id-dropdown', 'value'),
      Output('channel-id-select-all', 'value')],
     [Input('channel-id-dropdown', 'value'),

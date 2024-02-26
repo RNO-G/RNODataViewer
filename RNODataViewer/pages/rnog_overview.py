@@ -9,12 +9,12 @@ import astropy.time
 import datetime
 
 import dash
-from dash import html
-from dash import dcc
-from dash import callback_context
+from dash import html, dcc, callback
+# from dash import dcc
+# from dash import callback_context
 from dash.exceptions import PreventUpdate
 
-from RNODataViewer.base.app import app
+
 import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.data_provider_nur
 
@@ -25,14 +25,16 @@ import RNODataViewer.trigger_rate.trigger_active_plot
 import RNODataViewer.trigger_rate.run_data_plot
 from file_list.run_stats import run_table
 
+dash.register_page(__name__, path='/')
+
 time_options = [
     {
-        'label':astropy.time.Time(j, format='mjd').iso.split(' ')[-1][:-4],
+        'label':f'{j//3600:02d}:{(j%3600)//60:02d}',
         'value':j
-    } for j in np.arange(0,1,1./48)
+    } for j in np.arange(0, 24*3600, 1800)
 ]
 
-overview_layout = html.Div([
+layout = html.Div([
     # selection for combined (including waveforms, only subset is transferred) or header files, station ids
     # TODO make app respond to use header-only files
     html.Div([
@@ -103,8 +105,10 @@ overview_layout = html.Div([
     ], className='flexi-box')
 ])
 
+# layout = overview_layout # needed for pages support
+
 # callback to update the current / maximum allowed date
-@app.callback(
+@callback(
     [dash.dependencies.Output('time-selector-start-date', 'date'),
      dash.dependencies.Output('time-selector-start-date', 'max_date_allowed'),
      dash.dependencies.Output('time-selector-end-date', 'date'),
@@ -121,26 +125,29 @@ def update_current_date(n_intervals, max_date):
     start_date = datetime.datetime.utcnow() - datetime.timedelta(days=7)
     return [start_date, now, now, now]
 
-@app.callback(
+@callback(
     [dash.dependencies.Output('output-container-time-selector', 'children'),
-     dash.dependencies.Output('time-selector-start-time', 'options'),
-     dash.dependencies.Output('time-selector-end-time', 'options'),
+    #  dash.dependencies.Output('time-selector-start-time', 'options'),
+    #  dash.dependencies.Output('time-selector-end-time', 'options'),
     ],
     [dash.dependencies.Input('time-selector-start-date', 'date'),
      dash.dependencies.Input('time-selector-start-time', 'value'),
      dash.dependencies.Input('time-selector-end-date', 'date'),
      dash.dependencies.Input('time-selector-end-time', 'value'),
-     dash.dependencies.Input('station-id-dropdown', 'value')])
+     dash.dependencies.Input('overview-station-id-dropdown', 'value')])
 def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21,22]):
-    t_start = astropy.time.Time(start_date).mjd // 1 + start_time
-    t_end = astropy.time.Time(end_date).mjd // 1 + end_time
+    try:
+        t_start = astropy.time.Time(start_date) + astropy.time.TimeDelta(start_time, format='sec')
+        t_end = astropy.time.Time(end_date) + astropy.time.TimeDelta(end_time, format='sec')
+    except ValueError: # probably someone is typing!
+        raise PreventUpdate
     if t_start > t_end:
         raise PreventUpdate
     tab = run_table.get_table()
-    selected = tab[(np.array(tab["mjd_first_event"])>t_start) & (np.array(tab["mjd_last_event"])<t_end)]
+    selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)]
     logger.info("Number of selected runs: %s (out of %s)", len(selected), len(tab))
     logger.debug(f"Current utc time: {str(end_date)}")
-    RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(selected.filenames_root)
+    # RNODataViewer.base.data_provider_root.RNODataProviderRoot().set_filenames(selected.filenames_root.values)
 
     return_strings = []
     for station in station_ids:
@@ -149,28 +156,28 @@ def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21
             runrange = [np.nan, np.nan]
         else:
             runrange = [min(runs_for_station), max(runs_for_station)]
-        return_strings.append('{} - {}'.format(str(runrange[0]).rjust(6),str(runrange[1]).rjust(6)))
+        return_strings.append('{:6.0f} - {:6.0f}'.format(*runrange))
     return_data = pd.DataFrame({"Station": station_ids, "Selected Runs": return_strings})
 
     # the selected time(s) need to be in the dropdown options in order to display correctly
-    if t_start % 1 not in [k['value'] for k in time_options]:
-        t_start_label = astropy.time.Time(t_start % 1, format='mjd').iso.split(' ')[-1][:-4]
-        t_start_options = [{'label':t_start_label, 'value':t_start % 1}] + time_options
-    else: # this is probably never the case due to fp precision
-        t_start_options = time_options
-    if t_end % 1 not in [k['value'] for k in time_options]:
-        t_end_label = astropy.time.Time(t_end % 1, format='mjd').iso.split(' ')[-1][:-4]
-        t_end_options = [{'label':t_end_label, 'value':t_end % 1}] + time_options
-    else:
-        t_end_options = time_options
+    # if t_start % 1 not in [k['value'] for k in time_options]:
+    #     t_start_label = astropy.time.Time(t_start).iso.split(' ')[-1][:-4]
+    #     t_start_options = [{'label':t_start_label, 'value':t_start % 1}] + time_options
+    # else: # this is probably never the case due to fp precision
+    #     t_start_options = time_options
+    # if t_end % 1 not in [k['value'] for k in time_options]:
+    #     t_end_label = astropy.time.Time(t_end).iso.split(' ')[-1][:-4]
+    #     t_end_options = [{'label':t_end_label, 'value':t_end % 1}] + time_options
+    # else:
+    #     t_end_options = time_options
     output = [
         dash.dash_table.DataTable(
             id='ddoutput-container-time-selector',
             data=return_data.to_dict("records"),
             columns=[{'id': x, 'name': x} for x in return_data.columns]
         ),
-        t_start_options,
-        t_end_options,
+        # t_start_options,
+        # t_end_options,
     ]
 
     return output

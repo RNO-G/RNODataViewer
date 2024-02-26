@@ -1,12 +1,12 @@
-from dash import html
+from dash import html, dcc, callback
 import os
 import dash
-from dash import dcc
+from dash import dcc, html, callback
 from dash.dependencies import Input, Output, State
-from RNODataViewer.base.app import app
+
 import webbrowser
-import RNODataViewer.base.data_provider_root
-import RNODataViewer.base.data_provider_nur
+from RNODataViewer.base.data_provider_root import data_provider
+# import RNODataViewer.base.data_provider_nur
 import RNODataViewer.file_list.file_list
 import RNODataViewer.station_selection.station_selection
 import RNODataViewer.spectrogram.spectrogram
@@ -17,8 +17,7 @@ import numpy as np
 from dash import callback_context
 from dash.exceptions import PreventUpdate
 
-
-data_provider_run = RNODataViewer.base.data_provider_root.RNODataProviderRoot()
+dash.register_page(__name__, path='/runViewer')
 
 
 run_viewer_layout = html.Div([
@@ -54,7 +53,9 @@ run_viewer_layout = html.Div([
     ], className='flexi-box')
 ])
 
-@app.callback(
+layout = run_viewer_layout # needed for pages support
+
+@callback(
     Output('file-name-dropdown-2', 'value'),
     [Input('select-last-run', 'n_clicks'),
      Input('select-last-24h', 'n_clicks'),
@@ -69,6 +70,8 @@ def select_runs_button(last_run, last_24h, stations, run_table=run_table):
     station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
     tab_selected = tab[station_mask]
     tab_selected_sort = tab_selected.sort_values(by='mjd_last_event')
+    if not len(tab_selected):
+         raise PreventUpdate
     if trigger == 'select-last-run':
         return [tab_selected_sort.iloc[-1].loc['filenames_root']]
     elif trigger == 'select-last-24h':
@@ -78,13 +81,13 @@ def select_runs_button(last_run, last_24h, stations, run_table=run_table):
     else:
         raise PreventUpdate
 
-@app.callback(Output('file-name-dropdown-2', 'options'),
+@callback(Output('file-name-dropdown-2', 'options'),
               [Input('station-id-dropdown-single', 'value')])
 def set_filename_dropdown(stations , run_table=run_table):
         tab = run_table.get_table()
         station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
-        tab_selected = tab[station_mask]
+        tab_selected = tab[station_mask].sort_values(by='mjd_last_event', ascending=False) # most recent first
         filtered_names = list(tab_selected.filenames_root)
-        data_provider_run.set_filenames([])
-        rrr =  [{'label': "Station {}, Run {}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
+        data_provider.set_filenames([])
+        rrr =  [{'label': "Station {}, Run {:.0f}".format(row.station, row.run), 'value': row.filenames_root} for index, row in tab_selected.iterrows()]
         return rrr
