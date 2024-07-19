@@ -18,7 +18,7 @@ from RNODataViewer.base.data_provider_root import data_provider_event
 import logging
 import webbrowser
 from NuRadioReco.modules.base import module
-from RNODataViewer.file_list.run_stats import run_table, DATA_DIR, station_entries #, RunStats
+from RNODataViewer.file_list.run_stats import run_table, DATA_DIR, get_station_entries #, RunStats
 # logger = module.setup_logger(level=logging.INFO)
 logger=logging.getLogger('RNODataViewer')
 
@@ -30,8 +30,6 @@ data_folder = DATA_DIR
 # browser_provider.set_filetype(True)
 browser_provider = data_provider_event
 
-filename_table = run_table.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
-filename_table = filename_table.set_index(['station', 'run']).sort_index()
 
 # trigger_hover_info = (
 #     "Which trigger fired for this event. Options are\n"
@@ -169,11 +167,13 @@ layout = event_viewer_layout # needed for pages support
     [Input('station-id-dropdown', 'value'),
      Input('event-info-run', 'value'),
      ],
-    [State('user_id', 'children')]
+    [State('user_id', 'children'),
+     State('run-table-store', 'data')]
 )
-def fill_run_info_table(station_id, run_number, juser_id):
+def fill_run_info_table(station_id, run_number, juser_id, run_table_data):
     if (station_id is None) or (run_number is None):
         raise PreventUpdate
+    run_table.import_table(run_table_data)
     table = run_table.get_table().query('station==@station_id&run==@run_number').iloc[0]
     keys = ['time_start', 'time_end', 'n_events_recorded',
        'n_events_transferred', 'trigger_rf0_enabled', 'trigger_rf1_enabled',
@@ -245,14 +245,16 @@ def update_event_info_time(event_id, filename, station_id, run_number, juser_id)
         Input('url', 'pathname'),
         Input('tab-selection', 'value'),
     ],
-    [State('user_id', 'children')],
+    [State('user_id', 'children'),
+     State('run-table-store', 'data')],
     prevent_initial_call=True
 )
 def update_everything(
         btn1, btn2, btn3, btn4, btn5, btn6,
-        station_id, run_number, event_id, hash, url_path, tab_selection, juser_id
+        station_id, run_number, event_id, hash, url_path, tab_selection, juser_id, run_table_data
 ):
     user_id = json.loads(juser_id)
+    run_table.import_table(run_table_data)
     if tab_selection != '/eventViewer':
         raise PreventUpdate
     context = dash.callback_context
@@ -273,8 +275,8 @@ def update_everything(
         logger.debug(f'Requested S{station_id}R{run_number}E{event_id} from URL...')
 
     ### update station
-    n_stations = len(station_entries)
-    station_values = [i['value'] for i in station_entries]
+    n_stations = len(get_station_entries())
+    station_values = [i['value'] for i in get_station_entries()]
     if context.triggered[0]['prop_id'] == 'station-id-dropdown.value':
         pass # station_id from dropdown
 
@@ -316,6 +318,8 @@ def update_everything(
         id='event-info-run', style={'flex':1}),
 
     ### update event & event options
+    filename_table = run_table.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
+    filename_table = filename_table.set_index(['station', 'run']).sort_index()
     filename = filename_table.loc[(station_id, run_number), 'filenames_root']
     number_of_events = browser_provider.get_file_handler(user_id, filename).get_n_events()
     event_ids = browser_provider.get_file_handler(user_id, filename).get_event_ids()

@@ -13,9 +13,7 @@ import json
 import uuid
 from RNODataViewer.base.app import app
 
-import RNODataViewer.base.data_provider_root
-# import RNODataViewer.base.data_provider_nur
-from RNODataViewer.file_list.run_stats import station_entries, run_table
+from RNODataViewer.file_list.run_stats import get_station_entries, run_table
 
 import astropy.time
 import time
@@ -106,6 +104,9 @@ app.layout = html.Div([
             value='overview_tab', # start at general overview page by default
             id='tab-selection'
         ),
+    dcc.Loading(
+        dcc.Store(id='run-table-store', data=run_table.export_table()), # store the run table locally to prevent constant redownloading
+    fullscreen=True, delay_show=100, show_initially=True),
        html.Div([
             html.Div(id='event-click-coordinator', children=json.dumps(None), style={'display': 'none'}),
             html.Div(id='event-ids', style={'display': 'none'},
@@ -129,7 +130,7 @@ app.layout = html.Div([
                         ),
                         dcc.Dropdown(
                             id='station-id-dropdown',
-                            options=station_entries,
+                            options=get_station_entries(),
                             clearable=False,
                             multi=False,
                             style={'flex':1,'min-width':'120px'},
@@ -293,9 +294,23 @@ def tab_selection(tab, pathname):
     return page, page, displaystyle
 
 
-@callback(Output('version-info', 'children'),
-              [Input('self-updater', 'n_intervals')])
-def update_version_info(n_intervals):
+@callback([Output('version-info', 'children'),
+           Output('run-table-store', 'data')],
+            [Input('self-updater', 'n_intervals')],
+            [State('run-table-store', 'modified_timestamp'),
+             State('run-table-store', 'data')])
+def update_version_info(n_intervals, run_table_last_update, run_table_data):
+    # update run table
+    current_time = astropy.time.Time.now()
+    run_table.import_table(run_table_data)
+
+    last_update_dt = pd.to_datetime(run_table_last_update, unit='ms')
+    if last_update_dt.day != current_time.to_datetime().day: # once a day, perform a full run table update:
+        run_table.update_run_table(delta_t=None)
+    else:
+        run_table.update_run_table(7) # update last 7 days
+
+
     # get current versions:
     dataviewer_version = subprocess.check_output(['git', '-C', os.path.dirname(__file__), 'rev-parse', '--short', 'HEAD']).decode()
     # # check for updated version on remote
@@ -306,11 +321,6 @@ def update_version_info(n_intervals):
     nuradiomc_version = subprocess.check_output(['git', '-C', os.path.dirname(nuradiomc_path[0]), 'rev-parse', '--short', 'HEAD']).decode()
     subprocess.call(['git', '-C', nuradiomc_path[0], 'fetch', 'origin', '+refs/heads/rnog_eventbrowser:refs/remotes/origin/rnog_eventbrowser'])
     nuradiomc_current_version = subprocess.check_output(['git', '-C', os.path.dirname(nuradiomc_path[0]), 'rev-parse', '--short', 'origin/rnog_eventbrowser']).decode()
-    run_table_last_update = run_table.last_modification_date
-    time_since_update = astropy.time.Time(time.time(), format='unix') - run_table_last_update
-    if time_since_update.sec > 600:
-        run_table.update_run_table()
-        run_table_last_update = run_table.last_modification_date
 
     # if dataviewer_version == dataviewer_current_version:
     #     dataviewer_string = 'Up to date'
@@ -326,9 +336,9 @@ def update_version_info(n_intervals):
         html.Br(),
         f'NuRadioMC version: {nuradiomc_version} ({nuradiomc_string})',
         html.Br(),
-        f'Last run table update: {run_table_last_update.iso[:16]} (UTC)'
+        f'Last run table update: {current_time.iso[:16]} (UTC)'
     ]
-    return version_info_table
+    return version_info_table, run_table.export_table()
 
 @callback(
     [Output('show-debug-output', 'children'),

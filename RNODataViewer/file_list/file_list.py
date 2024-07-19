@@ -40,8 +40,9 @@ layout = html.Div([
      Input('overview-station-id-dropdown', 'value'),
      Input({'type':'show_more_button', 'index':ALL}, 'n_clicks')
      ],
+     [State('run-table-store', 'data')]
 )
-def update_file_list(n_clicks, start_date, start_time, end_date, end_time, station_ids, show_n_files_clicks):
+def update_file_list(n_clicks, start_date, start_time, end_date, end_time, station_ids, show_n_files_clicks, run_table_data):
     try:
         t_start = astropy.time.Time(start_date) + astropy.time.TimeDelta(start_time, format='sec')
         t_end = astropy.time.Time(end_date) + astropy.time.TimeDelta(end_time, format='sec')
@@ -49,7 +50,9 @@ def update_file_list(n_clicks, start_date, start_time, end_date, end_time, stati
         raise PreventUpdate
     if t_start > t_end:
         raise PreventUpdate
+    run_table.import_table(run_table_data)
     tab = run_table.get_table()
+    logger.warning(f"Amazingly, {tab.time_start.iloc[0]} looks like type {type(tab.time_start.iloc[0])}. An array of it looks like")
     selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)].sort_values(['station', 'time_start'])
     selected = selected.query('station in @station_ids')
 

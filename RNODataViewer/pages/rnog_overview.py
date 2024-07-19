@@ -2,7 +2,6 @@ import logging
 logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
 # logger.setLevel(logging.DEBUG)
-from dash.dependencies import Input
 import numpy as np
 import pandas as pd
 import astropy.time
@@ -134,8 +133,10 @@ def update_current_date(n_intervals, max_date):
      dash.dependencies.Input('time-selector-start-time', 'value'),
      dash.dependencies.Input('time-selector-end-date', 'date'),
      dash.dependencies.Input('time-selector-end-time', 'value'),
-     dash.dependencies.Input('overview-station-id-dropdown', 'value')])
-def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21,22]):
+     dash.dependencies.Input('overview-station-id-dropdown', 'value')],
+     [dash.dependencies.State('run-table-store', 'data')]
+     )
+def update_output(start_date, start_time, end_date, end_time, station_ids, run_table_data):
     try:
         t_start = astropy.time.Time(start_date) + astropy.time.TimeDelta(start_time, format='sec')
         t_end = astropy.time.Time(end_date) + astropy.time.TimeDelta(end_time, format='sec')
@@ -143,6 +144,7 @@ def update_output(start_date, start_time, end_date, end_time, station_ids=[11,21
         raise PreventUpdate
     if t_start > t_end:
         raise PreventUpdate
+    run_table.import_table(run_table_data)
     tab = run_table.get_table()
     selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)]
     logger.info("Number of selected runs: %s (out of %s)", len(selected), len(tab))
