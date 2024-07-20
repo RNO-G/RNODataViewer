@@ -76,8 +76,8 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
         normal_runs = table_i[physics_mask]
         special_runs = table_i[~physics_mask]
         if which_plot == 'run_length':
-            y_normal = TimeDelta(normal_runs.time_end - normal_runs.time_start).sec / 60
-            y_special = TimeDelta(special_runs.time_end - special_runs.time_start).sec / 60
+            y_normal = (Time(normal_runs.time_end) - Time(normal_runs.time_start)).sec / 60
+            y_special = (Time(special_runs.time_end) - Time(special_runs.time_start)).sec / 60
         else:
             y_normal = normal_runs.loc[idx[:], which_plot]
             y_special = special_runs.loc[idx[:], which_plot]

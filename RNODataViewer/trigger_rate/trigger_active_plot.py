@@ -100,18 +100,18 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
                     row=i_station+1,
                     col=1
                 )
-        else:
-            fig.add_trace(go.Scatter(x=np.nan, y=np.nan))
-        fig.update_layout({
-            'yaxis{}'.format(2*i_station+1):{
-                'tickmode':'array', 'tickvals':np.arange(len(trigger_cols)) * 1.5 + .5,
-                'fixedrange':True,
-                'ticktext':trigger_names, 'side':'left', 'title':'<b>Station {}</b>'.format(station_id)}})
-        fig.update_layout({
-            'yaxis{}'.format(2 * i_station + 2):{
-                'tickmode':'array', 'tickvals':np.unique(trigger_active),
-                'ticktext':['Off','On'] * (len(np.unique(trigger_active)) // 2), 'showticklabels':True}
-        })
+
+            fig.update_layout({
+                'yaxis{}'.format(2*i_station+1):{
+                    'tickmode':'array', 'tickvals':np.arange(len(trigger_cols)) * 1.5 + .5,
+                    'fixedrange':True,
+                    'ticktext':trigger_names, 'side':'left', 'title':'<b>Station {}</b>'.format(station_id)}})
+            fig.update_layout({
+                'yaxis{}'.format(2 * i_station + 2):{
+                    'tickmode':'array', 'tickvals':np.unique(trigger_active),
+                    'ticktext':['Off','On'] * (len(np.unique(trigger_active)) // 2), 'showticklabels':True}
+            })
+
     fig_height = np.max([(len(station_ids)+1.5) * 100, 350])
     fig.update_layout(height=fig_height)
 
