@@ -70,6 +70,8 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
     fig = go.Figure()
     for i_station, station_id in enumerate(station_ids):
         table_i = selected.query('station==@station_id')
+        if not len(table_i):
+            continue
         physics_mask = (table_i.run_type == 'physics') | (table_i.run_type == 'not specified')
         normal_runs = table_i[physics_mask]
         special_runs = table_i[~physics_mask]
@@ -81,31 +83,33 @@ def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_ti
             y_special = special_runs.loc[idx[:], which_plot]
         # normal_runs = table_i.loc[table_i.comment.isna()]
         # special_runs = table_i.dropna(subset=["comment"])
-        fig.add_trace(
-            go.Scatter(
-                x=Time(normal_runs.time_start).fits,
-                y=y_normal,
-                mode='markers',
-                name="Station {} (physics run / not specified)".format(station_id),
-                marker={'symbol':100,'color':plot_colors[i_station % len(plot_colors)], 'opacity':1.0,'size':7},
-                customdata=normal_runs.run,
-                hovertemplate="%{y}<br>%{x}<br>Run %{customdata}",
-                legendrank=i_station
+        if len(normal_runs):
+            fig.add_trace(
+                go.Scatter(
+                    x=Time(normal_runs.time_start).fits,
+                    y=y_normal,
+                    mode='markers',
+                    name="Station {} (physics run / not specified)".format(station_id),
+                    marker={'symbol':100,'color':plot_colors[i_station % len(plot_colors)], 'opacity':1.0,'size':7},
+                    customdata=normal_runs.run,
+                    hovertemplate="%{y}<br>%{x}<br>Run %{customdata}",
+                    legendrank=i_station
+                )
             )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=Time(special_runs.time_start).fits,
-                y=y_special,
-                mode='markers',
-                name="Station {} (special run)".format(station_id),
-                marker={'color':plot_colors[i_station % len(plot_colors)], 'symbol':34, 'line_width':1, 'line_color':plot_colors[i_station % len(plot_colors)], 'opacity':1.0, 'size':7},
-                customdata=special_runs.run,
-                meta=special_runs.run_type.astype('str'),
-                hovertemplate="%{y}<br>%{x}<br>Run %{customdata}<br>%{meta}",
-                legendrank=i_station+1000
+        if len(special_runs):
+            fig.add_trace(
+                go.Scatter(
+                    x=Time(special_runs.time_start).fits,
+                    y=y_special,
+                    mode='markers',
+                    name="Station {} (special run)".format(station_id),
+                    marker={'color':plot_colors[i_station % len(plot_colors)], 'symbol':34, 'line_width':1, 'line_color':plot_colors[i_station % len(plot_colors)], 'opacity':1.0, 'size':7},
+                    customdata=special_runs.run,
+                    meta=special_runs.run_type.astype('str'),
+                    hovertemplate="%{y}<br>%{x}<br>Run %{customdata}<br>%{meta}",
+                    legendrank=i_station+1000
+                )
             )
-        )
     fig['layout']['yaxis']['title'] = [i for i in run_info_options if i['value']==which_plot][0]['label']
     fig['layout']['legend']['uirevision'] = n_clicks
     return fig

@@ -69,39 +69,39 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
         specs=[[{'secondary_y':True},],]*n_rows)
     for i_station, station_id in enumerate(station_ids):
         table_i = selected.query('station==@station_id').sort_values(by='time_start')
-        x_times = Time(np.sort(np.concatenate([
-            table_i["time_start"], table_i["time_start"],
-            table_i["time_end"], table_i["time_end"]
-        ]))).fits
-        trigger_active = np.zeros((len(x_times), len(trigger_cols)))
         if len(table_i):
+            x_times = Time(np.sort(np.concatenate([
+                table_i["time_start"], table_i["time_start"],
+                table_i["time_end"], table_i["time_end"]
+            ]))).fits
+            trigger_active = np.zeros((len(x_times), len(trigger_cols)))
             data_labels = np.concatenate([
                 ['Run {} (start)'.format(run)]*2 + ['Run {} (end)'.format(run)]*2
                 for run in table_i.run
             ])
-        else:
-            data_labels = []
-        for i_trigger, trigger in enumerate(trigger_cols):
-            mask = 4 * np.where(table_i[trigger])[0]
-            trigger_active[mask + 1, i_trigger] = 1
-            trigger_active[mask + 2, i_trigger] = 1
+            for i_trigger, trigger in enumerate(trigger_cols):
+                mask = 4 * np.where(table_i[trigger])[0]
+                trigger_active[mask + 1, i_trigger] = 1
+                trigger_active[mask + 2, i_trigger] = 1
 
-            fig.add_trace(
-                go.Scatter(
-                    x=x_times,
-                    #y=trigger_names,
-                    y=trigger_active[:, i_trigger] + 1.5 * i_trigger,
-                    legendgroup=trigger_names[i_trigger],
-                    showlegend=not bool(i_station),
-                    name=trigger_names[i_trigger],
-                    text=data_labels,
-                    line={'color':trigger_colors[i_trigger]}
-                    ),
-                    #type='heatmap'),
-                secondary_y=False,
-                row=i_station+1,
-                col=1
-            )
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_times,
+                        #y=trigger_names,
+                        y=trigger_active[:, i_trigger] + 1.5 * i_trigger,
+                        legendgroup=trigger_names[i_trigger],
+                        showlegend=not bool(i_station),
+                        name=trigger_names[i_trigger],
+                        text=data_labels,
+                        line={'color':trigger_colors[i_trigger]}
+                        ),
+                        #type='heatmap'),
+                    secondary_y=False,
+                    row=i_station+1,
+                    col=1
+                )
+        else:
+            fig.add_trace(go.Scatter(x=np.nan, y=np.nan))
         fig.update_layout({
             'yaxis{}'.format(2*i_station+1):{
                 'tickmode':'array', 'tickvals':np.arange(len(trigger_cols)) * 1.5 + .5,
