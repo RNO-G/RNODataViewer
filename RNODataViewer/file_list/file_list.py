@@ -5,7 +5,7 @@ import pandas as pd
 from dash.dependencies import Input, Output, State
 import astropy.time
 import numpy as np
-from .run_stats import run_table
+from .run_stats import RUN_TABLE as run_table
 import os
 import zipfile
 import logging

@@ -18,7 +18,7 @@ from RNODataViewer.base.data_provider_root import data_provider_event
 import logging
 import webbrowser
 from NuRadioReco.modules.base import module
-from RNODataViewer.file_list.run_stats import run_table, DATA_DIR, station_entries #, RunStats
+from RNODataViewer.file_list.run_stats import RUN_TABLE, DATA_DIR #, RunStats
 # logger = module.setup_logger(level=logging.INFO)
 logger=logging.getLogger('RNODataViewer')
 
@@ -30,7 +30,7 @@ data_folder = DATA_DIR
 # browser_provider.set_filetype(True)
 browser_provider = data_provider_event
 
-filename_table = run_table.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
+filename_table = RUN_TABLE.get_table().loc[:, ['station', 'run', 'filenames_root']].drop_duplicates(subset=['station', 'run'])
 filename_table = filename_table.set_index(['station', 'run']).sort_index()
 
 # trigger_hover_info = (
@@ -174,7 +174,7 @@ layout = event_viewer_layout # needed for pages support
 def fill_run_info_table(station_id, run_number, juser_id):
     if (station_id is None) or (run_number is None):
         raise PreventUpdate
-    table = run_table.get_table().query('station==@station_id&run==@run_number').iloc[0]
+    table = RUN_TABLE.get_table().query('station==@station_id&run==@run_number').iloc[0]
     keys = ['time_start', 'time_end', 'n_events_recorded',
        'n_events_transferred', 'trigger_rf0_enabled', 'trigger_rf1_enabled',
        'trigger_ext_enabled', 'trigger_pps_enabled', 'trigger_soft_enabled',
@@ -273,6 +273,7 @@ def update_everything(
         logger.debug(f'Requested S{station_id}R{run_number}E{event_id} from URL...')
 
     ### update station
+    station_entries = RUN_TABLE.get_station_entries()
     n_stations = len(station_entries)
     station_values = [i['value'] for i in station_entries]
     if context.triggered[0]['prop_id'] == 'station-id-dropdown.value':
@@ -292,7 +293,7 @@ def update_everything(
             station_id = station_values[current_station_i + 1]
 
     ### update run & run options
-    run_numbers = run_table.get_table().query(
+    run_numbers = RUN_TABLE.get_table().query(
         'station==@station_id').sort_values(
         by='mjd_last_event', ascending=False).run.values.astype(int)
     run_options = [{'label':i, 'value':i} for i in run_numbers]

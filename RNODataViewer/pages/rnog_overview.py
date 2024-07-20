@@ -23,7 +23,7 @@ import RNODataViewer.station_selection.station_selection
 import RNODataViewer.trigger_rate.trigger_rate_uproot
 import RNODataViewer.trigger_rate.trigger_active_plot
 import RNODataViewer.trigger_rate.run_data_plot
-from file_list.run_stats import run_table
+from file_list.run_stats import RUN_TABLE as run_table
 
 dash.register_page(__name__, path='/')
 

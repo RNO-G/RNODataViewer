@@ -11,7 +11,7 @@ import RNODataViewer.base.error_message
 from NuRadioReco.utilities import units
 from astropy.time import Time, TimeDelta
 import pandas as pd
-from file_list.run_stats import run_table
+from file_list.run_stats import RUN_TABLE as run_table
 idx = pd.IndexSlice
 run_info_options = [
     {'label':'Number of events (recorded)', 'value':'n_events_recorded'},

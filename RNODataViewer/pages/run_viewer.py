@@ -12,7 +12,7 @@ import RNODataViewer.station_selection.station_selection
 import RNODataViewer.spectrogram.spectrogram
 import RNODataViewer.spectrogram.spectrogram_average_plot
 import RNODataViewer.noise_rms.noise_rms
-from file_list.run_stats import run_table
+from file_list.run_stats import RUN_TABLE as run_table
 import numpy as np
 from dash import callback_context
 from dash.exceptions import PreventUpdate

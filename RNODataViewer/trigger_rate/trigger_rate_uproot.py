@@ -8,16 +8,17 @@ from dash.dependencies import Input, Output, State
 from dash import callback_context
 import plotly.graph_objs as go
 import plotly.subplots
-import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.error_message
 from NuRadioReco.utilities import units
 from astropy.time import Time, TimeDelta
 from NuRadioReco.framework.base_trace import BaseTrace
 import pandas as pd
 import os
-from file_list.run_stats import run_table
+from file_list.run_stats import RUN_TABLE as run_table
+from file_list.run_stats import TRIGGER_RATE_TABLE
 import logging
 import requests
+
 logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
 logger.setLevel(logging.DEBUG)
@@ -61,90 +62,6 @@ layout = html.Div([
     ], className='panel panel-default')
 ])
 
-class trigger_rates:
-
-    def __init__(self, table_path='/tmp/RNODataViewer/data/trigger_rates'):
-        self.table_dir_local = table_path
-        if not os.path.exists(table_path):
-            os.makedirs(table_path)
-        self.hash_table_path_local = os.path.join(table_path, 'trigger_rate_hash_table.hdf5')
-        self.hash_table_path_url = 'https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rate_hash_table.hdf5'
-        self.last_update = Time('1970-01-01')
-        if os.path.exists(self.hash_table_path_local):
-            self.hash_table = pd.read_hdf(self.hash_table_path_local)
-        else:
-            self.hash_table = None
-
-    def get_updated_trigger_table(self, start_time, end_time):
-        """
-        Returns a DataFrame with the trigger rates
-        """
-        now = Time.now()
-        if (now - self.last_update).sec > 300: # update trigger rate tables
-            logger.warning("Updating trigger rate tables...")
-            try:
-                df_bytes = requests.get(self.hash_table_path_url)
-                df_bytes.raise_for_status()
-                with open(self.hash_table_path_local+'.upd', 'wb') as f:
-                    f.write(df_bytes.content)
-            except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-                logger.error(msg="Failed to update trigger rate tables, will try to use local versions instead...", exc_info=e)
-            
-            hash_table = pd.read_hdf(self.hash_table_path_local+'.upd')
-            if self.hash_table is None:
-                update_tables = hash_table.index.levels[0] # update all tables
-                logger.info(f'No previous hash found, updating all {len(update_tables)} trigger tables')
-            else:
-                update_tables = []
-                for i in hash_table.index.levels[0]:
-                    if i in self.hash_table.index.levels[0]:
-                        n_events_new = hash_table.loc[i, 'n_events']
-                        n_events_old = self.hash_table.loc[i, 'n_events']
-                        if len(n_events_new) == len(n_events_old):
-                            if np.all(n_events_new == n_events_old):
-                                continue # table is up to date
-                    update_tables.append(i)
-            
-            if len(update_tables):
-                # times = Time([f'{month}-01' for month in update_tables])
-                # mask = (times >= start_time) & (times <= end_time)
-                # update_tables = np.array(update_tables)[mask]
-
-                for table in update_tables:
-                    logger.warning(f"Downloading updated trigger rate table {table}")
-                    try:
-                        df_bytes = requests.get(f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_{table}.hdf5")
-                        df_bytes.raise_for_status()
-                        with open(os.path.join(self.table_dir_local, f"trigger_rates_{table}.hdf5"), 'wb') as f:
-                            f.write(df_bytes.content)
-                        # we update the hash table only AFTER the new table has been downloaded
-                        # this prevents issues if the update is interrupted by the user
-                        if self.hash_table is not None:
-                            if table in self.hash_table.index:
-                                self.hash_table.drop(table, inplace=True)
-                        self.hash_table = pd.concat([self.hash_table, hash_table.loc[[table]]]).sort_index()
-                        self.hash_table.to_hdf(self.hash_table_path_local, key='df', mode='w')
-                    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-                        logger.error(msg=f"Unable to update trigger table {table}", exc_info=e)
-            
-            self.last_update = now
-        tables = self.hash_table.index.levels[0]
-        times = Time([f'{month}-01' for month in tables])
-        start_month = Time(f'{Time(start_time).iso[:7]}-01') # stupid way of converting to 1st day of month
-        mask = (times >= start_month) & (times <= end_time)
-        tables = tables[mask]
-        trigger_rate_tables = [
-            pd.read_hdf(os.path.join(self.table_dir_local, f"trigger_rates_{table}.hdf5"))
-            for table in tables]
-        if not len(trigger_rate_tables):
-            logger.warning('No trigger rate tables for selected period!')
-            return None
-        
-        trigger_table = pd.concat(trigger_rate_tables)
-        
-        return trigger_table
-      
-TriggerRateTable = trigger_rates()
 
 
 @callback(
@@ -185,7 +102,7 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
     #         'all': 'solid'
     #         }
 
-    df = TriggerRateTable.get_updated_trigger_table(t_start, t_end)
+    df = TRIGGER_RATE_TABLE.get_updated_trigger_table(t_start, t_end)
     if df is None: # no trigger rate tables found
         return RNODataViewer.base.error_message.get_error_message("No trigger rate tables found")
     df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')

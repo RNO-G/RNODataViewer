@@ -13,10 +13,6 @@ import json
 import uuid
 from RNODataViewer.base.app import app
 
-import RNODataViewer.base.data_provider_root
-# import RNODataViewer.base.data_provider_nur
-from RNODataViewer.file_list.run_stats import station_entries, run_table
-
 import astropy.time
 import time
 import pandas as pd
@@ -40,12 +36,18 @@ class DashLoggerHandler(logging.StreamHandler):
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-pymongo_logger = logging.getLogger('pymongo')
-pymongo_logger.setLevel(logging.INFO)
+# set some very loud loggers to INFO instead
+for sublogger in ['pymongo', 'watchdog.observers.inotify_buffer', 'waitress.queue']:
+    sublogger = logging.getLogger(sublogger)
+    sublogger.setLevel(logging.INFO)
 
 if not any([isinstance(handler, DashLoggerHandler) for handler in logger.handlers]):
     dashLoggerHandler = DashLoggerHandler()
     logger.addHandler(dashLoggerHandler)
+
+from RNODataViewer.file_list.run_stats import RUN_TABLE as run_table
+run_table.update_run_table() # ensures the table is cached once initially
+# print(run_table.get_station_entries())
 
 argparser = argparse.ArgumentParser(description="View RNO Data Set")
 argparser.add_argument('--open-window', const=True, default=False, action='store_const',
@@ -57,6 +59,7 @@ argparser.add_argument('--waitress', const=True,  default=False, action='store_c
 #argparser.add_argument('--rno_data_dir', type=str, default=None, help="if set, use the passed <file_location> as top level directory where data (i.e. the stationXX directories) sit, rather than using 'RNO_DATA_DIR' environmental variable")
 parsed_args = argparser.parse_args()
 file_prefix = '.'
+
 
 if parsed_args.reverse_proxy_path is not None:
     app.config.update({
@@ -133,7 +136,7 @@ app.layout = html.Div([
                         ),
                         dcc.Dropdown(
                             id='station-id-dropdown',
-                            options=station_entries,
+                            options=run_table.get_station_entries(),
                             clearable=False,
                             multi=False,
                             style={'flex':1,'min-width':'120px'},
@@ -396,6 +399,14 @@ if __name__ == '__main__':
     #    logging.warning("--rno_data_dir set to: %s.\
     #            Using this as data directory instead of environmental variable RNO_DATA_DIR", parsed_args.rno_data_dir)
     #    os.environ["RNO_DATA_DIR"] = parsed_args.rno_data_dir
+
+    logger.debug("Loading run table...")
+    run_table.update_run_table()
+    logger.debug("Loading trigger rate tables...")
+    from file_list.run_stats import TRIGGER_RATE_TABLE
+    TRIGGER_RATE_TABLE.get_updated_trigger_table(
+        astropy.time.Time.now().to_datetime(), astropy.time.Time.now().to_datetime())
+
     pip_output = subprocess.check_output(['python3', '-m', 'pip', 'list']).decode()
     logger.debug(f"Installed python modules:\n{pip_output}")
 
@@ -406,4 +417,5 @@ if __name__ == '__main__':
         from waitress import serve
         serve(app.server, host='0.0.0.0', port=port, channel_timeout=300)
     else:
-        app.run_server(debug=True, port=port, host='0.0.0.0')
+        # hot reloading for some reason constantly triggers, so we turn it off even in debug mode
+        app.run(debug=True, port=port, host='0.0.0.0', use_reloader=False)

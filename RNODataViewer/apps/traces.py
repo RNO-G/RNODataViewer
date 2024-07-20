@@ -7,7 +7,7 @@ from dash.dependencies import State, Input, Output
 # from NuRadioReco.eventbrowser.app import app
 import logging
 
-logger = logging.getLogger('traces')
+logger = logging.getLogger('RNODataViewer.traces')
 
 layout = html.Div([
     html.Div(id='trigger-trace', style={'display': 'none'}),
