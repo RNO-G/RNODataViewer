@@ -52,7 +52,6 @@ def update_file_list(n_clicks, start_date, start_time, end_date, end_time, stati
         raise PreventUpdate
     run_table.import_table(run_table_data)
     tab = run_table.get_table()
-    logger.warning(f"Amazingly, {tab.time_start.iloc[0]} looks like type {type(tab.time_start.iloc[0])}. An array of it looks like")
     selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)].sort_values(['station', 'time_start'])
     selected = selected.query('station in @station_ids')
 

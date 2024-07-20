@@ -37,6 +37,10 @@ class DashLoggerHandler(logging.StreamHandler):
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
+
+pymongo_logger = logging.getLogger('pymongo')
+pymongo_logger.setLevel(logging.INFO)
+
 if not any([isinstance(handler, DashLoggerHandler) for handler in logger.handlers]):
     dashLoggerHandler = DashLoggerHandler()
     logger.addHandler(dashLoggerHandler)

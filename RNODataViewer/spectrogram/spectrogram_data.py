@@ -42,7 +42,7 @@ def get_spectrogram_data_py(station_id, channel_ids, filenames=None):
     return True, times[sort_args[::-1]], spectra[:, sort_args[::-1]], d_f, labels, triggers
 
 # @lru_cache(maxsize=1)
-def get_spectrogram_data_root(station_id, channel_ids, filenames=None):
+def get_spectrogram_data_root(station_id, channel_ids, filenames=None, start=0, max_spectra=1000):
     logger.debug("getting spectrogram data...")
     t0 = time.time()
     if not filenames is None:
@@ -51,9 +51,12 @@ def get_spectrogram_data_root(station_id, channel_ids, filenames=None):
     spectra = {i:[] for i in channel_ids}
     gps_times = []
     labels = []
-    iterator = data_provider.get_event_iterator()
+    # iterator = data_provider.get_event_iterator()
+    max_events = max_spectra // len(channel_ids)
 
-    for event in iterator():
+
+    for i in range(start, np.min([start+max_events, data_provider.get_n_events()])):
+        event = data_provider.get_event_i(i)
         station = event.get_station(station_id)
         for channel_id in channel_ids:
             channel = station.get_channel(channel_id)
