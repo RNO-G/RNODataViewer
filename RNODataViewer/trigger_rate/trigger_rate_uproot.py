@@ -156,11 +156,10 @@ TriggerRateTable = trigger_rates()
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
      State('overview-station-id-dropdown', 'value'),
-     State('trigger-rate-which-triggers', 'value'),
-     State('run-table-store', 'data')],
+     State('trigger-rate-which-triggers', 'value')],
     prevent_initial_call=True
 )
-def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids, trigger_keys, run_table_data):
+def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids, trigger_keys):
     t_start = (Time(start_date) + TimeDelta(start_time, format='sec')).datetime
     t_end = (Time(end_date) + TimeDelta(end_time, format='sec')).datetime
     t_start_unix = Time(t_start).unix // 60 * 60
@@ -191,7 +190,6 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
         return RNODataViewer.base.error_message.get_error_message("No trigger rate tables found")
     df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
     bins = np.arange(t_start_unix, t_end_unix + binwidth_sec + 1, binwidth_sec)
-    run_table.import_table(run_table_data)
     runtable = run_table.get_table().query("time_end>@t_start&time_start<@t_end")
     for station_id in station_ids:
         if station_id not in df.index.get_level_values(0).unique(): # index.levels doesn't update after the .query above

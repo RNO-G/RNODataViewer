@@ -55,13 +55,11 @@ layout = html.Div([
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('overview-station-id-dropdown', 'value'),
-     State('run-table-store', 'data')]
+     State('overview-station-id-dropdown', 'value')]
 )
-def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_time, station_ids, run_table_data):
+def plot_run_data(n_clicks, which_plot, start_date, start_time, end_date, end_time, station_ids):
     t_start = Time(start_date) + TimeDelta(start_time, format='sec')
     t_end = Time(end_date) + TimeDelta(end_time, format='sec')
-    run_table.import_table(run_table_data)
     tab = run_table.get_table()
     selected = tab[(np.array(tab.loc[:,"time_start"])>t_start) & (np.array(tab.loc[:,"time_end"])<t_end)]
     if len(selected) == 0:

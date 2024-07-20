@@ -60,14 +60,12 @@ layout = run_viewer_layout # needed for pages support
     [Input('select-last-run', 'n_clicks'),
      Input('select-last-24h', 'n_clicks'),
     ],
-    [State('station-id-dropdown-single', 'value'),
-     State('run-table-store', 'data')],
+    State('station-id-dropdown-single', 'value'),
     prevent_initial_call=True
 
 )
-def select_runs_button(last_run, last_24h, stations, run_table_data):
+def select_runs_button(last_run, last_24h, stations, run_table=run_table):
     trigger = callback_context.triggered[0]['prop_id'].split('.')[0]
-    run_table.import_table(run_table_data)
     tab = run_table.get_table()
     station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
     tab_selected = tab[station_mask]
@@ -84,11 +82,8 @@ def select_runs_button(last_run, last_24h, stations, run_table_data):
         raise PreventUpdate
 
 @callback(Output('file-name-dropdown-2', 'options'),
-              [Input('station-id-dropdown-single', 'value')],
-          [State('run-table-store', 'data')]
-              )
-def set_filename_dropdown(stations, run_table_data):
-        run_table.import_table(run_table_data)
+              [Input('station-id-dropdown-single', 'value')])
+def set_filename_dropdown(stations , run_table=run_table):
         tab = run_table.get_table()
         station_mask = np.array([np.isin(s, stations) for s in tab.station], dtype=bool)
         tab_selected = tab[station_mask].sort_values(by='mjd_last_event', ascending=False) # most recent first

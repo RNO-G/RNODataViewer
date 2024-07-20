@@ -41,10 +41,9 @@ layout = html.Div([
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('overview-station-id-dropdown', 'value'),
-     State('run-table-store', 'data')]
+     State('overview-station-id-dropdown', 'value')]
 )
-def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, station_ids, run_table_data):
+def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, station_ids):
     t_start = Time(start_date) + TimeDelta(start_time, format='sec')
     t_end = Time(end_date) + TimeDelta(end_time, format='sec')
     trigger_cols = [
@@ -56,7 +55,6 @@ def plot_active_triggers(n_clicks, start_date, start_time, end_date, end_time, s
          'pulse-per-second (pps)', 'forced trigger'
     ]
     trigger_colors = ['blue', 'red', 'green', 'purple', 'orange']
-    run_table.import_table(run_table_data)
     tab = run_table.get_table()
     selected = tab[(np.array(tab["time_start"])>t_start) & (np.array(tab["time_end"])<t_end)]
     if len(selected) == 0:
