@@ -157,7 +157,7 @@ def update_everything(
             station_id = station_values[current_station_i + 1]
 
     ### update run & run options
-    table_for_station = RUN_TABLE.get_table().loc[station_id].sort_values(
+    table_for_station = RUN_TABLE.get_table().query('station==@station_id').sort_values(
         by='mjd_last_event', ascending=False)
     run_numbers = table_for_station.run.values.astype(int)
     run_options = [{'label':i, 'value':i} for i in run_numbers]
@@ -181,7 +181,7 @@ def update_everything(
         id='event-info-run', style={'flex':1}),
 
     ### update event & event options
-    filename = table_for_station.loc[run_number, 'filenames_root']
+    filename = table_for_station.query('run==@run_number').iloc[0].loc['filenames_root']
     number_of_events = browser_provider.get_file_handler(user_id, filename).get_n_events()
     event_ids = browser_provider.get_file_handler(user_id, filename).get_event_ids()
     event_id_options = [{'label':i[1], 'value':i[1]} for i in event_ids]
