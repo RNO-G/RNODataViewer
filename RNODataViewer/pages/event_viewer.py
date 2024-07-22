@@ -5,155 +5,22 @@ import dash
 import json
 from dash.exceptions import PreventUpdate
 import numpy as np
-import uuid
-import glob
-#from NuRadioReco.eventbrowser.app import app
 
 from RNODataViewer.apps import traces
-import os
-import argparse
-# import NuRadioReco.eventbrowser.dataprovider
-# import NuRadioReco.eventbrowser.dataprovider_root
+
 from RNODataViewer.base.data_provider_root import data_provider_event
 import logging
-import webbrowser
-from NuRadioReco.modules.base import module
 from RNODataViewer.file_list.run_stats import RUN_TABLE, DATA_DIR #, RunStats
-# logger = module.setup_logger(level=logging.INFO)
+
 logger=logging.getLogger('RNODataViewer')
 
 dash.register_page(__name__, path='/eventViewer')
 
 data_folder = DATA_DIR
 
-# browser_provider = NuRadioReco.eventbrowser.dataprovider.DataProvider()
-# browser_provider.set_filetype(True)
 browser_provider = data_provider_event
 
-# trigger_hover_info = (
-#     "Which trigger fired for this event. Options are\n"
-#     "LT: the low-threshold trigger on the FLOWER board (deep trigger)\n"
-#     "RADIANT0: radiant trigger 0 (shallow trigger, upward-facing LPDAs)\n"
-#     "RADIANT1: radiant trigger 1 (shallow trigger, downward-facing LPDAs)\n"
-#     "RADIANTX: both radiant triggers\n"
-#     "FORCE: the periodic (usually 0.1 Hz) 'forced' trigger\n"
-#     "UNKNOWN: no trigger flag present"
-# )
 event_viewer_layout = html.Div([
-    # html.Div(id='event-click-coordinator', children=json.dumps(None), style={'display': 'none'}),
-    # html.Div(id='event-ids', style={'display': 'none'},
-    #          children=json.dumps([])),
-    # html.Div(
-    #     dcc.Slider(id='event-counter-slider', value=0, min=0, max=0), # the plots in the eventbrowser are linked to 'event-counter-slider'
-    #     style={'display':'none'}
-    # ),
-    # dcc.Dropdown(id='filename', value=None, style={'display':'None'}),
-    # html.Div([
-    #     html.Div([
-    #         html.Div(
-    #             html.Div([
-    #                 html.Button(
-    #                     [
-    #                         ' < '
-    #                     ],
-    #                     id='btn-previous-station',
-    #                     title='Previous station',
-    #                     style={'height':'35px'}
-    #                     # className='btn btn-primary',
-    #                 ),
-    #                 dcc.Dropdown(
-    #                     id='station-id-dropdown',
-    #                     options=station_entries,
-    #                     clearable=False,
-    #                     multi=False,
-    #                     style={'flex':1,'min-width':'120px'},
-    #                     value=None,
-    #                     persistence=True,
-    #                     persistence_type='memory'
-    #                 ),
-    #                 html.Button(
-    #                     [
-    #                         ' > '
-    #                     ],
-    #                     id='btn-next-station',
-    #                     title='Next station',
-    #                     style={'height':'35px'}
-    #                     # className='btn btn-primary',
-    #                 ),
-    #                 ], style={'flex':1, 'display':'inherit'}
-    #             )
-    #         , className='custom-table-row'),
-    #         html.Div([
-    #             html.Div('Run:', className='custom-table-td'),
-    #             html.Button(
-    #                     [
-    #                         ' < '
-    #                     ],
-    #                     id='btn-next-run',
-    #                     title='Previous run',
-    #                     style={'height':'35px'}
-    #                 ),
-    #             html.Div(
-    #                 dcc.Dropdown(
-    #                     value='', options=[], searchable=True, clearable=False,
-    #                     # persistence=True, persistence_type='memory',
-    #                     id='event-info-run', style={'flex':1}),
-    #                 id='event-info-run-container', style={'flex':1}),
-    #             html.Button(
-    #                 [
-    #                     ' > '
-    #                 ],
-    #                 id='btn-previous-run',
-    #                 title='Next run',
-    #                 style={'height':'35px'}
-    #             ),
-    #         ], className='custom-table-row'),
-    #         html.Div([
-    #             html.Div('Event:', className='custom-table-td'),
-    #             html.Button(
-    #                     [
-    #                         ' < '
-    #                     ],
-    #                     id='btn-previous-event',
-    #                     title='Previous event',
-    #                     style={'height':'35px'}
-    #                 ),
-    #             dcc.Dropdown(
-    #                 value=None, options=[], searchable=True, clearable=False,
-    #                 # persistence=True, persistence_type='memory',
-    #                 id='event-info-id', style={'flex':1}),
-    #             html.Button(
-    #                 [
-    #                     ' > '
-    #                 ],
-    #                 id='btn-next-event',
-    #                 title='Next event',
-    #                 style={'height':'35px'}
-    #             ),
-    #         ], className='custom-table-row'),
-    #         html.Div([
-    #             html.Div('Time:', className='custom-table-td'),
-    #             html.Div('', className='custom-table-td-last', id='event-info-time',style={'height':'35px'})
-    #         ], className='custom-table-row'),
-    #         html.Div([
-    #             html.Div('Trigger:', className='custom-table-td', title=trigger_hover_info),
-    #             html.Div('', className='custom-table-td-last', id='event-info-trigger', style={'fontWeight':'bold', 'height':'35px'}, title=trigger_hover_info)
-    #         ], className='custom-table-row')
-    #     ], style={'flex': '1', 'min-width':280, 'max-width':400}, className='event-info-table', id='event-info-table'),
-    #     dash.dash_table.DataTable(
-    #         columns=[{"name":i, "id":i} for i in ['Run Info', '']],
-    #         style_header=dict(fontWeight='bold',textAlign='left'),
-    #         style_table=dict(padding='0px 25px 0px 0px'),
-    #         style_cell=dict(textAlign='left'),
-    #         style_data_conditional=[
-    #             {
-    #                 'if':{'filter_query':'{Value} = "True"', 'column_id':'Value'},
-    #                 'color':'green',
-    #                 'fontWeight':'bold'
-    #             }
-    #         ],
-    #         id='eventviewer-run-info-table'),
-    # ], style={'display': 'flex'}),
     traces.layout
 ])
 
@@ -343,6 +210,5 @@ def update_everything(
     outputs = [
         filename, station_id, run_dropdown, event_id, event_id_options, event_i, len(event_ids)-1, hash
     ]
-    # logger.debug(f"outputs:{outputs}")
     return outputs
 
