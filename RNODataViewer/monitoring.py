@@ -11,7 +11,6 @@ import webbrowser
 import subprocess
 import json
 import uuid
-from RNODataViewer.base.app import app
 
 import astropy.time
 import time
@@ -61,8 +60,9 @@ parsed_args = argparser.parse_args()
 file_prefix = '.'
 
 
+from RNODataViewer.base.app_config import app_config
 if parsed_args.reverse_proxy_path is not None:
-    app.config.update({
+    app_config.update({
     # as the proxy server will remove the prefix
     'routes_pathname_prefix': '/',
 
@@ -73,6 +73,7 @@ if parsed_args.reverse_proxy_path is not None:
 
     file_prefix = parsed_args.reverse_proxy_path
 
+from RNODataViewer.base.app import app
 
 logger.info("Starting the monitoring application")
 
