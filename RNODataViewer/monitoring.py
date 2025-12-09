@@ -403,9 +403,9 @@ if __name__ == '__main__':
     logger.debug("Loading run table...")
     run_table.update_run_table()
     logger.debug("Loading trigger rate tables...")
-    from file_list.run_stats import TRIGGER_RATE_TABLE
-    TRIGGER_RATE_TABLE.get_updated_trigger_table(
-        astropy.time.Time.now().to_datetime(), astropy.time.Time.now().to_datetime())
+    # from file_list.run_stats import TRIGGER_RATE_TABLE
+    # TRIGGER_RATE_TABLE.get_updated_trigger_table(
+    #     astropy.time.Time.now().to_datetime(), astropy.time.Time.now().to_datetime())
 
     pip_output = subprocess.check_output(['python3', '-m', 'pip', 'list']).decode()
     logger.debug(f"Installed python modules:\n{pip_output}")

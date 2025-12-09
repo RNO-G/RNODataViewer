@@ -88,11 +88,11 @@ layout = html.Div([
                 RNODataViewer.file_list.file_list.layout
             ], style={'width': '55%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginLeft': "1%", 'marginRight': "1%"})]),
 
-    html.Div([
-        html.Div([
-            RNODataViewer.trigger_rate.trigger_rate_uproot.layout
-        ], className='flexi-element-1')
-    ], className='flexi-box'),
+    # html.Div([
+    #     html.Div([
+    #         RNODataViewer.trigger_rate.trigger_rate_uproot.layout
+    #     ], className='flexi-element-1')
+    # ], className='flexi-box'),
     html.Div([
         html.Div([
             RNODataViewer.trigger_rate.run_data_plot.layout
