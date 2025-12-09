@@ -10,7 +10,7 @@ RUN git config --global http.postBuffer 524288000
 RUN git clone --branch rnog_eventbrowser https://github.com/nu-radio/NuRadioMC.git NuRadioMC --depth 1
 
 RUN pip install --upgrade pip
-RUN python3 /usr/local/RNODataViewer/NuRadioMC/install_dev.py --install --no-interactive
+RUN pip install -e /usr/local/RNODataViewer/NuRadioMC
 
 
 # install additional dependencies not covered by the installation script (yet)
@@ -33,7 +33,7 @@ RUN pip install -r requirements.txt .
 # update NuRadioMC (saves some time when rebuilding docker image)
 WORKDIR /usr/local/RNODataViewer/NuRadioMC
 RUN git pull
-RUN python3 /usr/local/RNODataViewer/NuRadioMC/install_dev.py --install --no-interactive
+RUN pip install -e /usr/local/RNODataViewer/NuRadioMC
 
 RUN useradd nuradio
 # we give nuradio ownership of NuRadioMC and RNODataViewer to make git version checking work
