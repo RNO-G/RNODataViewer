@@ -1,29 +1,33 @@
 import numpy as np
 import itertools
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
 import plotly.graph_objs as go
 import plotly.subplots
-import RNODataViewer.base.data_provider_root
 import RNODataViewer.base.error_message
 from NuRadioReco.utilities import units
 from astropy.time import Time, TimeDelta
 from NuRadioReco.framework.base_trace import BaseTrace
 import pandas as pd
 import os
-from file_list.run_stats import run_table
+from file_list.run_stats import RUN_TABLE as run_table
+from file_list.run_stats import TRIGGER_RATE_TABLE
 import logging
 import requests
+
 logging.basicConfig()
 logger = logging.getLogger("RNODataViewer")
 logger.setLevel(logging.DEBUG)
 
-RUN_TABLE = run_table.get_table() # may have to double check this doesn't break automatic updating?
-trigger_names = ['all', 'rf', 'force', 'pps', 'ext', 'radiant', 'lt', 'RF0', 'RF1', 'RF-1']
+trigger_names = ['ALL', 'RADIANT0','RADIANT1', 'RADIANTX', 'LT', 'FORCE', 'PPS']
+
+# line styles for plot
+trigger_line_styles = ['solid'] + 4 * ['dash', 'dot', 'dashdot', 'longdash', 'longdashdot']
+trigger_line_styles = {i:j for i,j in zip(trigger_names, trigger_line_styles)}
 
 layout = html.Div([
     html.Div([
@@ -52,53 +56,15 @@ layout = html.Div([
                 id='trigger-rate-which-triggers',
                 clearable=True, multi=True,
                 options=[{'label':i, 'value':i} for i in trigger_names],
-                value=['all', 'force', 'radiant', 'lt'], style={'display':'inline-flex', 'min-width':100}),
+                value=['ALL',], style={'display':'inline-flex', 'min-width':100}),
             dcc.Graph(id='triggeruproot-plot')
         ], className='panel panel-body',id='triggeruproot-plot-container', style={'display':'none'})
     ], className='panel panel-default')
 ])
 
 
-def get_updated_trigger_table(station_id):
-    """
-    Download updated trigger rate table
 
-    Loads the trigger rate table, and checks if it is up to date using the
-    run table. If not, download a (hopefully) updated copy from the Desy server.
-
-    """
-    table_path = os.path.join(
-        #os.path.dirname(os.path.dirname(__file__)),
-        '/tmp/RNODataViewer/',
-        f'data/trigger_rates/trigger_rates_s{station_id}.hdf5'
-    )
-    try: # first, we check if the table is available locally
-        df = pd.read_hdf(table_path)
-        df["time_unix"] = df.index
-        time_last_event = Time(run_table.get_table().query('station==@station_id').mjd_last_event.max(), format='mjd').unix
-        if time_last_event - np.max(df.time_unix) > 1800:
-            logger.debug(
-                f'Updating trigger rate table for station {station_id}:\n'
-                + f'Most recent event: {Time(time_last_event, format="unix").iso}\n'
-                + f'Latest event in table: {Time(np.max(df.time_unix), format="unix").iso}')
-            raise FileNotFoundError(f"Trigger rate table for station {station_id} is out of date, updating...") # this is hacky!
-    except FileNotFoundError: # no file found, or update required
-        if not os.path.exists(os.path.dirname(table_path)):
-            os.makedirs(os.path.dirname(table_path))
-        table_path_https = f"https://www.zeuthen.desy.de/~shallman/trigger_rates/trigger_rates_s{station_id}.hdf5"
-        try:
-            df_bytes = requests.get(table_path_https)
-        except requests.exceptions.ConnectionError:
-            logger.warning("Failed to update trigger rate tables, using local version instead...")
-            return df
-        with open(table_path, 'wb') as file:
-            file.write(df_bytes.content)
-
-        df = pd.read_hdf(table_path)
-        df["time_unix"] = df.index
-    return df
-
-@app.callback(
+@callback(
     Output('triggeruproot-plot', 'figure'),
     [Input('triggeruproot-reload-button', 'n_clicks'),
      Input('trigger-rate-zoom-level', 'value'),],
@@ -106,15 +72,15 @@ def get_updated_trigger_table(station_id):
      State('time-selector-start-time', 'value'),
      State('time-selector-end-date', 'date'),
      State('time-selector-end-time', 'value'),
-     State('station-id-dropdown', 'value'),
+     State('overview-station-id-dropdown', 'value'),
      State('trigger-rate-which-triggers', 'value')],
     prevent_initial_call=True
 )
 def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, end_date, end_time, station_ids, trigger_keys):
-    t_start = Time(start_date).mjd // 1 + start_time
-    t_end = Time(end_date).mjd // 1 + end_time
-    t_start_unix = Time(t_start, format='mjd').unix
-    t_end_unix = Time(t_end, format='mjd').unix
+    t_start = (Time(start_date) + TimeDelta(start_time, format='sec')).datetime
+    t_end = (Time(end_date) + TimeDelta(end_time, format='sec')).datetime
+    t_start_unix = Time(t_start).unix // 60 * 60
+    t_end_unix = (Time(t_end).unix // 60 + 1) * 60
 
     binwidth_sec = binwidth_min * 60
 
@@ -123,85 +89,102 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
 
     plots = []
 
-    trigger_line_styles = {
-            'rf_trigger': 'dash',
-            'force_trigger': 'longdash',
-            'pps_trigger': 'longdash',
-            'ext_trigger': 'longdashdot',
-            'radiant_trigger': 'dashdot',
-            'RF0_trigger': 'dashdot',
-            'RF1_trigger': 'dashdot',
-            'RF-1_trigger': 'dashdot',
-            'lt_trigger': 'dot',
-            'all': 'solid'
-            }
+    # trigger_line_styles = {
+    #         'rf_trigger': 'dash',
+    #         'force_trigger': 'longdash',
+    #         'pps_trigger': 'longdash',
+    #         'ext_trigger': 'longdashdot',
+    #         'radiant_trigger': 'dashdot',
+    #         'RF0_trigger': 'dashdot',
+    #         'RF1_trigger': 'dashdot',
+    #         'RF-1_trigger': 'dashdot',
+    #         'lt_trigger': 'dot',
+    #         'all': 'solid'
+    #         }
 
+    df = TRIGGER_RATE_TABLE.get_updated_trigger_table(t_start, t_end)
+    if df is None: # no trigger rate tables found
+        return RNODataViewer.base.error_message.get_error_message("No trigger rate tables found")
+    df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
+    bins = np.arange(t_start_unix, t_end_unix + binwidth_sec + 1, binwidth_sec)
+    runtable = run_table.get_table().query("time_end>@t_start&time_start<@t_end")
     for station_id in station_ids:
-        logger.debug(f"Getting trigger table for station {station_id}...")
-        df = get_updated_trigger_table(station_id)
-        df = df.query('time_unix>@t_start_unix&time_unix<@t_end_unix')
-        run_table_cut = RUN_TABLE.query(
-            'station==@station_id&mjd_last_event>@t_start&mjd_first_event<@t_end'
-        ).sort_values(by='mjd_first_event')
-        logger.debug("Making bins...")
-        bins = []
-        runs = []
-        for i in run_table_cut.index:
-            run, t_run_start, t_run_end = run_table_cut.loc[i, ['run', 'mjd_first_event', 'mjd_last_event']]
-            t_run_start = Time(t_run_start, format='mjd').unix
-            t_run_end = Time(t_run_end, format='mjd').unix
-            t_start_i = np.max([t_run_start, t_start_unix])
-            t_end_i = np.min([t_run_end, t_end_unix])
-            bins_i =  np.arange(
-                int(t_start_i) - 1, # -1 to prevent off-by-one errors due to timing precision in run table
-                int(t_end_i) + binwidth_sec,
-                binwidth_sec
-            )
-
-            bins_i[-1] = np.min([bins_i[-1], t_run_end + 1])
-            # if the last bin is much smaller than the requested bin size,
-            # we combine it with the penultimate bin:
-            if (len(bins_i) > 2):
-                if (t_run_end - bins_i[-2] < binwidth_sec / 3):
-                    bins_i[-2] = t_run_end + 1
-                    bins_i = bins_i[:-1]
-            if bins: # this makes sure the bins of the previous run don't overlap
-                bins[-1][-1] = np.min([bins[-1][-1], bins_i[0]-1])
-            bins.append(bins_i)
-            runs.append(run * np.ones_like(bins_i, dtype=int))
-        if not bins: # no runs available for this station - skip
+        if station_id not in df.index.get_level_values(0).unique(): # index.levels doesn't update after the .query above
+            logger.info(f"No trigger rates for station {station_id} in current time selection, skipping...")
             continue
-        bins = np.concatenate(bins)
-        runs = np.concatenate(runs)
+        logger.debug(f"Getting trigger table for station {station_id}...")
+        run_table_cut = runtable.query('station==@station_id')
+        runs = np.array((len(bins)-1) * ['',], dtype=object)
+        run_start_times = Time(run_table_cut.time_start).unix
+        run_end_times = Time(run_table_cut.time_end).unix
+        run_values = run_table_cut.run.values
+        mask = (bins[None, :-1] < run_end_times[:, None]) & (bins[None, 1:] > run_start_times[:,None])
+        for i in range(len(run_values)):
+            runs[mask[i]] += f'{int(run_values[i])},'
+        runs[np.where(runs=='')] = 'None'
+        # np.save(f'{station_id}_runs', runs) # debugging
+        # np.save(f'{station_id}_times', bins)
+        # bins = []
+        # runs = []
+        # for i in run_table_cut.index:
+        #     run, t_run_start, t_run_end = run_table_cut.loc[i, ['run', 'time_start', 'time_end']]
+        #     t_run_start = Time(t_run_start).unix
+        #     t_run_end = Time(t_run_end).unix
+        #     t_start_i = np.max([t_run_start, t_start_unix])
+        #     t_end_i = np.min([t_run_end, t_end_unix])
+        #     bins_i =  np.arange(
+        #         int(t_start_i) - 1, # -1 to prevent off-by-one errors due to timing precision in run table
+        #         int(t_end_i) + binwidth_sec,
+        #         binwidth_sec
+        #     )
+
+        #     bins_i[-1] = np.min([bins_i[-1], t_run_end + 1])
+        #     # if the last bin is much smaller than the requested bin size,
+        #     # we combine it with the penultimate bin:
+        #     if (len(bins_i) > 2):
+        #         if (t_run_end - bins_i[-2] < binwidth_sec / 3):
+        #             bins_i[-2] = t_run_end + 1
+        #             bins_i = bins_i[:-1]
+        #     if bins: # this makes sure the bins of the previous run don't overlap
+        #         bins[-1][-1] = np.min([bins[-1][-1], bins_i[0]-1])
+        #     bins.append(bins_i)
+        #     runs.append(run * np.ones_like(bins_i, dtype=int))
+        # if not bins: # no runs available for this station - skip
+        #     continue
+        # bins = np.concatenate(bins)
+        # runs = np.concatenate(runs)
         bin_widths = bins[1:] - bins[:-1]
 
         logger.debug("Binning trigger rates...")
+        trigger_df = df.loc[station_id]
         for key in trigger_keys:
-            if key=="all":
+            if key=="ALL":
                 visible = True
                 line_dict = dict(width=2)
                 mode = 'lines+markers'
             else:
                 visible= True #'legendonly'
-                line_dict = dict(dash=trigger_line_styles[f'{key}_trigger'])
+                line_dict = dict(dash=trigger_line_styles[key])
                 mode = 'lines'
-            counts, _ = np.histogram(df.index.values, bins=bins, weights=df.loc[:,key])
+            counts, _ = np.histogram(trigger_df.index.get_level_values(1), bins=bins, weights=trigger_df.loc[:,key])
             y = counts / bin_widths
-            y[bin_widths > 1.5 * binwidth_sec] = np.nan # don't connect runs with large time gaps
-            mask = np.where(~(
-                ((bin_widths < binwidth_sec - 1e-4)
-                | (bin_widths > 1.4 * binwidth_sec))
-                & (y < 1e-6)
-            )) # exclude empty bins between runs
+            assert len(runs) == len(y)
+            # mask = np.ones_like(y).astype(bool)
+            # y[bin_widths > 1.5 * binwidth_sec] = np.nan # don't connect runs with large time gaps
+            # mask = np.where(~(
+            #     ((bin_widths < binwidth_sec - 1e-4)
+            #     | (bin_widths > 1.4 * binwidth_sec))
+            #     & (y < 1e-6)
+            # )) # exclude empty bins between runs
             plots.append(go.Scattergl(
-                x = Time(bins[mask], format='unix').fits, #Time(df.time_unix, format='unix').fits,
-                y = y[mask], #df.loc[:, key] / 60,
+                x = Time((bins[:-1]+bin_widths/2), format='unix').fits, #Time(df.time_unix, format='unix').fits,
+                y = y, #df.loc[:, key] / 60,
                 mode=mode,
                 name='Station: {}, Trigger: {}'.format(station_id, key),
-                customdata=runs[mask],
+                customdata=runs,
                 visible=visible,
                 line=line_dict,
-                hovertemplate=f"Station {station_id}, run %{{customdata}}, trigger: {key}<br>%{{y}}<br>%{{x}}"
+                hovertemplate=f"Station {station_id}, run %{{customdata}} trigger: {key}<br>%{{y}}<br>%{{x}}"
             ))
     logger.debug("Making plot...")
     fig = go.Figure(plots)
@@ -212,28 +195,28 @@ def update_triggeruproot_plot(n_clicks, binwidth_min, start_date, start_time, en
             direction="left",
             buttons=list([
                 dict(
+                    args=[{'yaxis.type': 'log'}],
+                    label="Log",
+                    method="relayout"
+                ),
+                dict(
                     args=[{'yaxis.type': 'linear'}],
                     label="Linear",
                     method="relayout"
                 ),
-                dict(
-                    args=[{'yaxis.type': 'log'}],
-                    label="Log",
-                    method="relayout"
-                )
             ])
         ),
     ]
     fig.update_layout(
           xaxis={'title': 'date'},
-          yaxis={'title': 'Rate [Hz]'},
+          yaxis={'title': 'Rate [Hz]','type':'log'},
           updatemenus=updatemenus,
           uirevision=True
       )
     fig.update_yaxes(rangemode='tozero')
     return fig
 
-@app.callback(
+@callback(
     [Output('triggeruproot-plot-container', 'style'),
      Output('triggeruproot-showhide','children')],
     [Input('triggeruproot-reload-button', 'n_clicks'),

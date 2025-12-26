@@ -1,8 +1,8 @@
 from dash.exceptions import PreventUpdate
 import numpy as np
 #from NuRadioReco.eventbrowser.app import app
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
@@ -45,7 +45,7 @@ channel_mapping = pd.DataFrame(channel_entries)
 channel_mapping.set_index("value", inplace=True)
 
 
-@app.callback(
+@callback(
     Output('spectrogram-plot', 'figure'),
     [Input('spectrogram-reload-button', 'n_clicks'),
      Input('spectrogram-plot-max-freq-amp', 'value')],
@@ -87,15 +87,15 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
         shared_yaxes='all',
         vertical_spacing=0.2 / n_rows
     )
-    times_iso = np.repeat(astropy.time.Time(times).iso, len(spectra[0][0])).reshape(len(labels),len(spectra[0][0])).T
+    times_iso = np.repeat(astropy.time.Time(times).iso, len(spectra[channel_ids[0]][0])).reshape(len(labels),len(spectra[channel_ids[0]][0])).T
     plot_times = np.arange(0, len(times))
-    xtitles = np.repeat(labels, len(spectra[0][0])).reshape(len(labels),len(spectra[0][0])).T
+    xtitles = np.repeat(labels, len(spectra[channel_ids[0]][0])).reshape(len(labels),len(spectra[channel_ids[0]][0])).T
     for i_channel, channel_id in enumerate(channel_ids):
         i_row = i_channel // 4 + 1
         i_col = i_channel % 4 + 1
         fig.add_trace(
             go.Heatmap(
-                z=np.abs(spectra[i_channel].T) / units.mV,
+                z=np.abs(spectra[channel_id].T) / units.mV,
                 x=plot_times,
                 y0=0.0,
                 dy=d_f / units.MHz,
@@ -113,7 +113,7 @@ def update_spectrogram_plot(n_clicks, max_freq_amp, station_id, channel_ids, fil
     fig['layout']['uirevision'] = file_names
     return fig
 
-@app.callback(
+@callback(
     [Output('spectrogram-plot-container', 'style'),
      Output('spectrogram-showhide','children')],
     [Input('spectrogram-reload-button', 'n_clicks'),

@@ -1,0 +1,3 @@
+[submodule "rnog-runtable"]
+	path = rnog-runtable
+	url = git@github.com:RNO-G/rnog-runtable.git

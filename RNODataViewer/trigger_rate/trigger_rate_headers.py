@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
-from RNODataViewer.base.app import app
-from dash import html
+
+from dash import html, dcc, callback
 from dash import dcc
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
@@ -29,7 +29,7 @@ layout = html.Div([
     ], className='panel panel-default')
 ])
 
-@app.callback(
+@callback(
     Output('triggeruproot-plot', 'figure'),
     [Input('triggeruproot-reload-button', 'n_clicks')],
     [State('station-id-dropdown', 'value')]
