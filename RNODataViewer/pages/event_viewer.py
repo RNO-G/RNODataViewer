@@ -11,6 +11,7 @@ from RNODataViewer.apps import traces
 from RNODataViewer.base.data_provider_root import data_provider_event
 import logging
 from RNODataViewer.file_list.run_stats import RUN_TABLE, DATA_DIR #, RunStats
+from RNODataViewer.base.app_config import prefix as file_prefix
 
 logger=logging.getLogger('RNODataViewer')
 
@@ -117,7 +118,7 @@ def update_everything(
         station_id, run_number, event_id, hash, url_path, tab_selection, juser_id
 ):
     user_id = json.loads(juser_id)
-    if tab_selection != '/eventViewer':
+    if tab_selection != file_prefix() + '/eventViewer':
         raise PreventUpdate
     context = dash.callback_context
     logger.info(f"Updating event viewer from {context.triggered[0]['prop_id']}")

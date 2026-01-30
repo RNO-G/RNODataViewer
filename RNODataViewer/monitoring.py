@@ -11,7 +11,6 @@ import webbrowser
 import subprocess
 import json
 import uuid
-from RNODataViewer.base.app import app
 
 import astropy.time
 import time
@@ -58,11 +57,12 @@ argparser.add_argument('--waitress', const=True,  default=False, action='store_c
 # argparser.add_argument('--skip-file-check', const=True, default=False, action='store_const', help='Skip check to see which files are available')
 #argparser.add_argument('--rno_data_dir', type=str, default=None, help="if set, use the passed <file_location> as top level directory where data (i.e. the stationXX directories) sit, rather than using 'RNO_DATA_DIR' environmental variable")
 parsed_args = argparser.parse_args()
-file_prefix = '.'
 
+from RNODataViewer.base.app_config import prefix, update_prefix
 
+from RNODataViewer.base.app_config import app_config
 if parsed_args.reverse_proxy_path is not None:
-    app.config.update({
+    app_config.update({
     # as the proxy server will remove the prefix
     'routes_pathname_prefix': '/',
 
@@ -71,8 +71,11 @@ if parsed_args.reverse_proxy_path is not None:
     'requests_pathname_prefix': parsed_args.reverse_proxy_path + "/"
     })
 
-    file_prefix = parsed_args.reverse_proxy_path
+    update_prefix(parsed_args.reverse_proxy_path)
 
+
+
+from RNODataViewer.base.app import app
 
 logger.info("Starting the monitoring application")
 
@@ -99,7 +102,7 @@ app.title = "RNO-G Data Monitor"
 app.layout = html.Div([
     # header line with logo and title
     html.Div([
-        html.Img(src=file_prefix+'/assets/rnog_logo_monogram_BlackTransparant.png', style={"float": "left", "width": "100px"}),
+        html.Img(src=prefix()+'/assets/rnog_logo_monogram_BlackTransparant.png', style={"float": "left", "width": "100px"}),
         html.H1('RNO-G Data Monitor'),
         ]),
     # three tabs, using this method, fresh pages get loaded after switching tabs
@@ -290,9 +293,9 @@ def tab_selection(tab, pathname):
     if triggering_component == 'url':
         page = pathname # set from url
     else:
-        page = tab
+        page = app.get_relative_path(tab)
 
-    if page == '/eventViewer':
+    if page == prefix()+'/eventViewer':
         displaystyle = {'display':'flex'}
     else:
         displaystyle = {'display':'none'}

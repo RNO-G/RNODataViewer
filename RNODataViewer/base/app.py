@@ -2,6 +2,7 @@ import dash
 from flask import Flask
 import os
 import diskcache
+from RNODataViewer.base.app_config import app_config
 
 cache = diskcache.Cache("/tmp/RNODataViewer/cache")
 background_callback_manager = dash.DiskcacheManager(cache=cache)
@@ -16,6 +17,7 @@ server = Flask(os.getenv("FLASK_APP_DIR") or __name__, static_folder='static')
 app = dash.Dash(
     server=server, use_pages=True,
     pages_folder='../', suppress_callback_exceptions=True,
-    background_callback_manager=background_callback_manager
+    background_callback_manager=background_callback_manager,
+    **app_config
 )
 #app.config.suppress_callback_exceptions = True
